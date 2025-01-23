@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products Locator</title>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf"></script>
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            height: 100vh;
+        }
+        #sidebar {
+            width: 35%;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa;
+            overflow-y: auto;
+        }
+        #map {
+            width: 65%;
+            height: 100%;
+        }
+        #search {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .branch {
+            padding: 15px;
+            margin-bottom: 15px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .branch:hover {
+            background: #f1f1f1;
+        }
+        .branch h3 {
+            margin: 5px 0;
+            font-size: 18px;
+        }
+        .branch p {
+            margin: 5px 0;
+            color: #555;
+            font-size: 15px;
+        }
+        .branch a {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .branch a:hover {
+            text-decoration: underline;
+        }
+        .nearest-branch {
+            font-weight: bold;
+            color: green;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        <h2>Products Locator</h2>
+        <input id="search" type="text" placeholder="Search for pharmacies...">
+        <div id="nearest-branch" class="nearest-branch"></div>
+        <div id="branch-list"></div>
+    </div>
+    <div id="map"></div>
+
+    <script>
+        mapboxgl.accessToken = 'pk.eyJ1IjoicGF2bHlkb3NzMTQzIiwiYSI6ImNtNjg5YzRyczAxNGYyaXMzZnI0bGs4YXUifQ.2sW84f1DmD4njKAti-Y1rg';
+
+        const branches = [
+   { name: "Doss Zaitoun", address: "Tomanaby, Cairo", coordinates: [31.314732, 30.103183] },
+            { name: "Doss Tayaran", address: "101 El Tayaran St, El-Tawfik, Nasr City, Cairo Governorate 4451015", coordinates: [31.324216, 30.071265] },
+            { name: "Doss Almaza", address: "40 Almaza Street, Almazah, Heliopolis, Cairo Governorate 4461135", coordinates: [31.346090, 30.085298] },
+            { name: "Doss Al Daher", address: "4 Mahmoud Fahmy Al-Mamari, Al-Sakakini, Al-daher District, Cairo Governorate", coordinates: [31.265671615903713, 30.06258206699227] },
+            { name: "Doss Al Shams", address: "97 Mohamed Farid, Airport, Qesm El-Nozha, Cairo Governorate 4470352", coordinates: [31.34333047357388, 30.114331202940114] },
+            { name: "Doss Hadaek Al Koba", address: "88 Ahmed Zaki, Private, Hadayek El-Kobba Department, Cairo Governorate 4381605", coordinates: [31.280367447413482, 30.079240742949747] },
+            { name: "Doss Hamamat Al Koba", address: "20-29 Dar Al-Salaam, Al-Zaytoun Al-Sharqiya, Al-Zaytoun District, Cairo Governorate 4520121", coordinates: [31.297306868633168, 30.08972795892963] },
+            { name: "Doss Al Mahkama", address: "483G+C72, Atef Bey Barakat, Al-Bustan, Heliopolis District, Cairo Governorate 4460153", coordinates: [31.325569773574145, 30.103702386163196] },
+            { name: "Doss Maryland", address: "23 El-Higaz, Al-Montazah, Heliopolis District, Cairo Governorate 4460223", coordinates: [31.320195477569477, 30.097117774773082] },
+            { name: "Doss Sheraton", address: "24 Sayed Zakareya, Sheraton Airport, Qesm El-Nozha, Cairo Governorate", coordinates: [31.3733887735741, 30.102984622754747] },
+            { name: "Doss Saray Al Koba", address: "17 Bani Tai, Al-Zaytoun Al-Sharqiya, Qism Al-Zaytoun, Cairo Governorate", coordinates: [31.305036860374365, 30.09326805006896] },
+            { name: "Doss Nasr City", address: "Makram Ebeid Street, Sixth District, Nasr City Department, Cairo Governorate", coordinates: [31.345862473575238, 30.058500696785725] },
+            { name: "Doss New Cairo", address: "3 Skies Plaza South 90 street, New Cairo", coordinates: [31.495873973575932, 30.026518515330608] },
+            { name: "Dair Elmalak", address: "23 Sharae Zarafet Al-Gabal, near Dair El-Malak Church", coordinates: [31.271663026998677, 30.080960692622618] },
+            { name: "Bait Al Aiz", address: "35 Ibn Al-Hakam Square, Tomanaby, Zaitoun", coordinates: [31.319862184428445, 30.11031524289574] },
+            { name: "Doss Diplomats", address: "New Cairo 1, Cairo Governorate", coordinates: [31.440293998128208, 29.993664906918173] },
+ { name: "صيدليات العماوي", address: "طريق الفيلات قبل طريق الدائري الاقليمي - بنها", coordinates: [31.17285019679927, 30.47115365374199] },
+  { name: "صيدليات هانى عبد الظاهر", address: "برج كارفور نازله كوبرى عرابى", coordinates: [31.249776916846326, 30.122845497161443] },
+  { name: "صيدليه محمد الشريف", address: "حوض العمده امام سنتر عبدالله شبرا الخيمة", coordinates: [31.243639819930525, 30.134480118939983] },
+  { name: "leen store", address: "شارع الجمهورية بجوار مكتبة الصفا المحمدي - محطه الفكهاني - القلج", coordinates: [31.349923696547883, 30.17990551178345] },
+  { name: "الحوت", address: "برج مسجد السادات حدائق القبة . رقم 210", coordinates: [31.29060494469495, 30.08590755960474] },
+  { name: "اوريجينال ميجا ستور", address: "الموسكي - القاهرة", coordinates: [31.256328084841787, 30.051054493997505] },
+  { name: "اولاد هندي", address: "10ش حدائق القبة خلف قسم الحدائق", coordinates: [31.282729854216292, 30.094610352396344] },
+  { name: "صيدليات البقلاوي", address: "شارع النصر المعادي", coordinates: [31.277043666683607, 29.977538587979073] },
+  { name: "صيدليه الازهار", address: "شارع حنين ابن اسحاق خلف الحديقة الدولية -مدينة نصر", coordinates: [31.340029971718323, 30.04857246485963] },
+  { name: "صيدليه د محمد علي", address: "حدائق القبة امام الوهاب موتورز", coordinates: [31.31797532875599, 30.117668165299968] },
+  { name: "بانوراما الزغاو", address: "الموسكي - القاهرة", coordinates: [31.25844943458138, 30.064254273840508] },
+  { name: "ميخا كوزمتكس", address: "عين شمس ش الزهراء", coordinates: [31.322918589281095, 30.13251751372593] },
+  { name: "صيدليات العين", address: "صيدليات العين", coordinates: [31.196868210035092, 30.054794800235232] },
+  { name: "صيدليات بدير", address: "رقم 77 شارع عين شمس ناصية احمد عصمت", coordinates: [31.319757654217252, 30.125599147885932] },
+  { name: "صيدليات حسين مسلم", address: "بجوار مستشفى الرضوان عين شمس", coordinates: [31.33822192958943, 30.131342663435717] },
+  { name: "صيدليات عابدين", address: "بجوار بنك QNP ش الهرم بجوار", coordinates: [31.14502687521917, 30.00570360812401] },
+  { name: "صيدليات عامر", address: "السراج مول - مدينه نصر", coordinates: [31.356595176428375, 30.051341341405525] },
+  { name: "صيدليات فريد شوقي", address: "شارع 15 مايو امام مستشفي محمد عبده شبرا الخيمة", coordinates: [31.259363146126347, 30.12400339272157] },
+  { name: "صيدليات ليله", address: "شارع الطيران حى السفارات", coordinates: [31.337550288072155, 30.037490818224573] },
+  { name: "صيدليات محمد حسن", address: "ش محمد نجيب المرج", coordinates: [31.33607089593054, 30.152754367106095] },
+  { name: "صيدليه احمد حسن", address: "امام مسجد الرشدان مدينة نصر", coordinates: [31.304762096391975, 30.068308135786392] },
+  { name: "صيدليه الزغبي", address: "11432 شارع عباد العقاد مدينة نصر", coordinates: [31.338146323819092, 30.055021393633762] },
+  { name: "صيدليه القناعة", address: "شارع مخلص من شارع اسماعيل القباني - مدينة نصر", coordinates: [31.32907103224979, 30.05852838036744] },
+  { name: "صيدليه الميدان", address: "9 شارع ميدان المفارق برج الاطباء بجوار قسم المقطم", coordinates: [31.32891968807288, 30.011900814270696] },
+  { name: "صيدليه صلاح الدين", address: "40 شارع بابل عمر صدقي الدقي محافظة الجيزة", coordinates: [31.202703380128014, 30.04271683659131] },
+  { name: "صيدليه ميرا مجدي", address: "ميدان الحجاز بجوار coc للنظارارت", coordinates: [31.344090466745616, 30.10961265646186] },
+  { name: "صيدليه جاردن سيتي", address: "40 شارع القصر العيني .", coordinates: [31.232435972729625, 30.032038478695952] },
+  { name: "صيدليه عزالدين (الرحاب)", address: "289ممر الشانزليزيه السوق التجارى الرحاب", coordinates: [31.49231584222057, 30.056098503066963] },
+  { name: "صيدليه العوضي", address: "شارع خليفة المأمون - امام سوق العصر - مصر الجديدة", coordinates: [31.30926323409841, 30.087414972875028] },
+  { name: "صيدليات لايف", address: "10شارع عبدالله بن طاهر من مكرم عبيد م نصر", coordinates: [31.343732880628753, 30.06289684437156] },
+  { name: "الحكيم ستور", address: "9 شارع الحكيم متفرع من شارع سعد زغلول الجيزة", coordinates: [31.21314237370612, 30.014569094422516] },
+  { name: "تون تون (فرع فيصل)", address: "شارع فيصل", coordinates: [31.160610687665294, 29.993281331992723] },
+  { name: "صيدليات بي ويل", address: "شارع فيصل", coordinates: [31.157776192163432, 29.98177326820458] },
+  { name: "صيدليات ربيع", address: "شارع فيصل", coordinates: [31.175699490318248, 30.01250928899951] },
+  { name: "صيدليات الرحاب", address: "اخر شارع فيصل امام مسجد عباد الرحمن", coordinates: [31.13521029248713, 29.993591183587895] },
+  { name: "صيدليات الوليد", address: "شارع فيصل", coordinates: [31.151298002761543, 29.99649820849074] },
+  { name: "صيدليات د احمد صلاح", address: "اول شارع فيصل", coordinates: [31.19172426282921, 30.022582868358672] },
+  { name: "صيدليه برج مصدق", address: "شارع مصدق الدقي", coordinates: [31.206217686222246, 30.039722033627122] },
+  { name: "صيدليه د . امنية", address: "6 شارع متولي الشعراوي - اللبيني فوق نفق المريوطية - الجيزة", coordinates: [31.14492879496983, 29.99722226248965] },
+  { name: "صيدليه د . بيشوي صافي", address: "اول شارع العشرين فيصل", coordinates: [31.185474573706106, 30.009669733901497] },
+  { name: "صيدليه الاء و نجلاء", address: "ش كعابيش فيصل", coordinates: [31.150842557388028, 30.002057212994405] },
+  { name: "صيدليه الجيزة الكبري", address: "ميدان الجيزة", coordinates: [31.209157538429636, 30.015812853400472] },
+  { name: "صيدليه الشاذلي", address: "18 شارع الملك فيصل", coordinates: [31.19694418676582, 30.057634278590022] },
+  { name: "صيدليه الصحه و الجمال", address: "شارع فيصل الرئيسي بجوار سوبر جيم", coordinates: [31.157462187646814, 30.004080787835118] },
+  { name: "صيدليه الفيشاوي", address: "شارع فيصل الرئيسي - امام عالم الشنط", coordinates: [31.162682830402094, 29.999444871214287] },
+  { name: "صيدليه حواس", address: "شارع فيصل", coordinates: [31.20075188622325, 30.014337606898195] },
+  { name: "صيدليه خالد حجر", address: "ش البوهى بجوار ش الجامع فيصل", coordinates: [31.212509034789907, 30.08707966205799] },
+  { name: "صيدليه د . جابر", address: "شارع القومية بجوار محل ام النور امبابة", coordinates: [31.207874206828865, 30.09493873595587] },
+  { name: "صيدليه د ناجي", address: "32 شارع الدقي", coordinates: [31.213024076998746, 30.039957973022485] },
+  { name: "صيدليه شريف", address: "10 شارع ميدان المساحة امام فندق سفير الدقي .", coordinates: [31.21199413782278, 30.039053507699233] },
+  { name: "صيدليه عادل", address: "اول فيصل خلف برج الاطباء", coordinates: [31.200393056195217, 30.014595380193576] },
+  { name: "صيدليه فتح الله", address: "32 شارع جول جمال متفرع من البطل احمد عبد العزيز المهندسين", coordinates: [31.20765281325198, 30.060308545195248] },
+  { name: "صيدليه فتحي", address: "شارع الوحده الرئيسي بجوار بي تك و كشري الرحماني", coordinates: [31.198266732249017, 30.079590222861945] },
+  { name: "صيدليه مصطفي الجديده", address: "تحت كوبري فيصل علي اليمين", coordinates: [31.200205519734165, 30.01736896745989] },
+  { name: "صيدليه ميرا مسعود", address: "برج د علي الدين ميدان الحصري 6 اكتوبر", coordinates: [30.96503646108761, 29.993111588088432] },
+  { name: "صيدليه نور الاسلام", address: "35 شارع بشتيل المنيرة الغربية امبابه", coordinates: [31.199485026700042, 30.076476870671545] },
+  { name: "صيدليه ياسر شبانة", address: "ش المحروسة متفرع من عمر طوسون الجيزة", coordinates: [31.208121372728677, 30.0629348273761] },
+  { name: "صيدليه ساره العجرمي", address: "شارع كعبيش الطوابق قيصل", coordinates: [31.146201854132247, 30.003039965792805] },
+  { name: "اورجينال ستور- عين شمس", address: "شارع احمد عصمت امام ش محمد رشاد عين شمس", coordinates: [31.336028455478502, 30.124894002279333] },
+  { name: "تون تون (فرع الزيتون)", address: "شارع طومانباي الزيتون", coordinates: [31.318515759234106, 30.107977045549312] },
+  { name: "تون تون (فرع مدينه نصر)", address: "اول شارع عباس العقاد مدينه نصر", coordinates: [31.337405951554352, 30.058200480998867] },
+  { name: "سان بولا جملة", address: "شارع ترعة الجبل الزيتون", coordinates: [31.31270329432191, 30.11122270839167] },
+  { name: "صيدليات اكرم", address: "9ش حسين شفيق المصرى النزهة مصر الجديدة", coordinates: [31.35072920526177, 30.118397103388666] },
+  { name: "صيدليات الهلال", address: "مكرم عبيد - مدينة نصر .", coordinates: [31.344602205263673, 30.06441823961536] },
+  { name: "صيدليات زكري", address: "1 ش رشدي ميدان سفير مصر الجديدة", coordinates: [31.337534703412754, 30.097281998273186] },
+  { name: "صيدليه ابوسمبل", address: "ش ابو سمبل امام حلواني نابولي مصر الجديده", coordinates: [31.326826018755277, 30.100928886796776] },
+  { name: "صيدليه افريقيا", address: "45 شارع مكرم عبيد - مدينه نصر", coordinates: [31.345882891770763, 30.060278062052387] },
+  { name: "صيدليه الاندلس", address: "11 شارع الاندلس خلف الميريلاند مصر الجديده", coordinates: [31.315587230398826, 30.09797029762661] },
+  { name: "صيدليه البرلسي", address: "شارع ابراهيم اللقاني تقاطع شارع الطيران امام مستشفي تامين الصحي مدينه نصر", coordinates: [31.326625450853133, 30.05865599298651] },
+  { name: "صيدليه الجامع", address: "68 شارع دمشق ميدان الجامع مصر الجديده", coordinates: [31.32789229271624, 30.10026036663823] },
+  { name: "صيدليه الكوثر", address: "42ش احمد فخري مدينة نصر", coordinates: [31.349679693892842, 30.064344475209236] },
+  { name: "صيدليه الماسة", address: "ش المدينه المنورة النزهة الجديده", coordinates: [31.32541548277054, 30.106644345344574] },
+  { name: "صيدليه حاتم صلاح الدين", address: "تقاطع شارع عباس العقاد مع مصطفي النحاس مدينه نصر", coordinates: [31.338910045742956, 30.05377869470995] },
+  { name: "صيدليه شرف", address: "شارع الحجاز مصر الجديدة", coordinates: [31.363431881054805, 30.182745411939354] },
+  { name: "صيدليه عيسي", address: "4 ش افلاطون ارض الجولف", coordinates: [31.33323429377417, 30.12391258089944] },
+  { name: "صيدليه النيل", address: "شارع الترعة البولاقية شبرا - مصر", coordinates: [31.245669686221625, 30.066269732416266] },
+  { name: "صيدليه كمال", address: "184 ش التحرير - باب اللوق", coordinates: [31.242283605264326, 30.04456198416688] },
+  { name: "صيدليه هديل", address: "ش ذهني الضاهر", coordinates: [31.25963310156415, 30.065265893833285] },
+  { name: "سوتير", address: "شبرا - مصر", coordinates: [31.247359547591525, 30.083317529614053] }
+];
+
+
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [31.314732, 30.103183],
+            zoom: 10
+        });
+
+        const markers = [];
+        branches.forEach(branch => {
+            const marker = new mapboxgl.Marker()
+                .setLngLat(branch.coordinates)
+                .setPopup(new mapboxgl.Popup().setHTML(`
+                    <strong>${branch.name}</strong><br>
+                    ${branch.address}<br>
+                    <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
+                `))
+                .addTo(map);
+            markers.push(marker);
+        });
+
+        const branchList = document.getElementById('branch-list');
+        const searchInput = document.getElementById('search');
+        const nearestBranchDiv = document.getElementById('nearest-branch');
+
+        function updateBranchList(sortedBranches) {
+            branchList.innerHTML = "";
+            sortedBranches.forEach((branch, index) => {
+                const branchItem = document.createElement('div');
+                branchItem.className = 'branch';
+                branchItem.innerHTML = `
+                    <h3>${branch.name}</h3>
+                    <p>${branch.address}</p>
+                    <p>Distance: ${branch.distance.toFixed(2)} km</p>
+                    <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
+                `;
+                branchItem.addEventListener('click', () => {
+                    map.flyTo({ center: branch.coordinates, zoom: 14 });
+                    const popup = markers[index].getPopup();
+                    if (popup) {
+                        popup.addTo(map);
+                    }
+                });
+                branchList.appendChild(branchItem);
+            });
+        }
+
+        navigator.geolocation.getCurrentPosition(position => {
+            const userLocation = [position.coords.longitude, position.coords.latitude];
+
+            new mapboxgl.Marker({ color: "blue" })
+                .setLngLat(userLocation)
+                .setPopup(new mapboxgl.Popup().setText("Your Location"))
+                .addTo(map);
+
+            const branchesWithDistances = branches.map(branch => ({
+                ...branch,
+                distance: turf.distance(
+                    turf.point(userLocation),
+                    turf.point(branch.coordinates)
+                )
+            }));
+
+            branchesWithDistances.sort((a, b) => a.distance - b.distance);
+
+            const nearestBranch = branchesWithDistances[0];
+            nearestBranchDiv.innerHTML = `The nearest pharmacy: <strong>${nearestBranch.name}</strong>`;
+
+            const popupContent = `
+                <strong>${nearestBranch.name}</strong><br>
+                ${nearestBranch.address}<br>
+                <a href="https://www.google.com/maps?q=${nearestBranch.coordinates[1]},${nearestBranch.coordinates[0]}" target="_blank">View on Google Maps</a>
+            `;
+            map.flyTo({ center: nearestBranch.coordinates, zoom: 14 }).on('moveend', () => {
+                new mapboxgl.Popup()
+                    .setLngLat(nearestBranch.coordinates)
+                    .setHTML(popupContent)
+                    .addTo(map);
+            });
+
+            updateBranchList(branchesWithDistances);
+        }, error => {
+            console.error("Location error:", error.message);
+            alert("Unable to fetch location.");
+            updateBranchList(branches.map(branch => ({ ...branch, distance: 0 })));
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const filteredBranches = branches.filter(branch => branch.name.toLowerCase().includes(e.target.value.toLowerCase()));
+            updateBranchList(filteredBranches.map(branch => ({ ...branch, distance: 0 })));
+        });
+    </script>
+</body>
+</html>
