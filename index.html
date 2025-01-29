@@ -142,7 +142,8 @@
     </style>
 </head>
 <body>
-    <div id="header">
+   <!-- Remove or modify the header -->
+<div id="header" style="display: none;"></div>
         <!-- Empty header for spacing -->
     </div>
     <div id="container">
@@ -292,27 +293,27 @@
 
         // Update branch list
         function updateBranchList(sortedBranches) {
-            branchList.innerHTML = "";
-            sortedBranches.forEach((branch, index) => {
-                const branchItem = document.createElement('div');
-                branchItem.className = 'branch';
-                branchItem.innerHTML = `
-                    <h3>${branch.name}</h3>
-                    <p>${branch.address}</p>
-                    <p>Distance: ${branch.distance ? branch.distance.toFixed(2) + ' km' : 'N/A'}</p>
-                    <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
-                `;
-                branchItem.addEventListener('click', () => {
-                    // Close any existing popup
-                    markers.forEach(marker => marker.getPopup().remove());
-                    // Fly to the selected branch
-                    map.flyTo({ center: branch.coordinates, zoom: 14 });
-                    // Open the popup for the selected branch
-                    markers[index].getPopup().addTo(map);
-                });
-                branchList.appendChild(branchItem);
-            });
-        }
+    branchList.innerHTML = "";
+    sortedBranches.forEach((branch, index) => {
+        const branchItem = document.createElement('div');
+        branchItem.className = 'branch';
+        branchItem.innerHTML = `
+            <h3>${branch.name}</h3>
+            <p>${branch.address}</p>
+            <p>Distance: ${branch.distance ? branch.distance.toFixed(2) + ' km' : 'N/A'}</p>
+            <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
+        `;
+        branchItem.addEventListener('click', () => {
+            // Close any existing popup
+            markers.forEach(marker => marker.getPopup().remove());
+            // Fly to the selected branch
+            map.flyTo({ center: branch.coordinates, zoom: 14 });
+            // Open the popup for the selected branch
+            markers[index].togglePopup(); // Toggle the popup for the selected marker
+        });
+        branchList.appendChild(branchItem);
+    });
+}
 
         // Handle geolocation
         function handleGeolocation() {
