@@ -3,85 +3,165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Products Locator</title>
+    <title>Pharmacy Locator</title>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf"></script>
     <style>
+        /* General Styles */
         body {
-            display: flex;
             margin: 0;
             padding: 0;
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
             height: 100vh;
-        }
-        #sidebar {
-            width: 35%;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             background-color: #f8f9fa;
-            overflow-y: auto;
         }
+
+        #header {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
         #map {
-            width: 65%;
-            height: 100%;
+            flex: 1;
+            height: 60vh; /* Map takes 60% of the screen on mobile */
         }
+
+        #sidebar {
+            width: 100%;
+            background-color: white;
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 40vh; /* Sidebar takes 40% of the screen on mobile */
+        }
+
+        #sidebar h2 {
+            font-size: 20px;
+            margin: 0 0 20px;
+            color: #007bff;
+            text-align: center;
+        }
+
         #search {
             width: 100%;
             padding: 10px;
             margin-bottom: 20px;
             border: 1px solid #ddd;
-            border-radius: 4px;
+            border-radius: 5px;
             font-size: 16px;
         }
+
         .branch {
             padding: 15px;
-            margin-bottom: 15px;
-            background: #fff;
+            margin-bottom: 10px;
+            background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 8px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background-color 0.3s ease, transform 0.2s ease;
         }
+
         .branch:hover {
-            background: #f1f1f1;
+            background-color: #f1f1f1;
+            transform: translateY(-2px);
         }
+
         .branch h3 {
-            margin: 5px 0;
+            margin: 0 0 5px;
             font-size: 18px;
+            color: #333;
         }
+
         .branch p {
-            margin: 5px 0;
-            color: #555;
-            font-size: 15px;
+            margin: 0;
+            color: #666;
+            font-size: 14px;
         }
+
         .branch a {
             color: #007bff;
             text-decoration: none;
             font-size: 14px;
         }
+
         .branch a:hover {
             text-decoration: underline;
         }
+
         .nearest-branch {
+            font-size: 16px;
             font-weight: bold;
-            color: green;
+            color: #28a745;
             margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .error {
+            text-align: center;
+            padding: 20px;
+            font-size: 16px;
+            color: #dc3545;
+        }
+
+        /* Desktop Layout */
+        @media (min-width: 768px) {
+            #container {
+                flex-direction: row;
+            }
+
+            #map {
+                height: 100%;
+                flex: 2;
+            }
+
+            #sidebar {
+                width: 350px;
+                max-height: 100vh;
+                box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
+            }
         }
     </style>
 </head>
 <body>
-    <div id="sidebar">
-        <h2>Products Locator</h2>
-        <input id="search" type="text" placeholder="Search for pharmacies...">
-        <div id="nearest-branch" class="nearest-branch"></div>
-        <div id="branch-list"></div>
+    <div id="header">
+        <!-- Empty header for spacing -->
     </div>
-    <div id="map"></div>
+    <div id="container">
+        <div id="map"></div>
+        <div id="sidebar">
+            <h2>Pharmacy Locator</h2>
+            <input id="search" type="text" placeholder="Search for pharmacies..." />
+            <div id="nearest-branch" class="nearest-branch"></div>
+            <div id="branch-list"></div>
+            <div id="loading" class="loading">Loading...</div>
+            <div id="error" class="error" style="display: none;">Unable to fetch location.</div>
+        </div>
+    </div>
 
     <script>
+        // Mapbox access token
         mapboxgl.accessToken = 'pk.eyJ1IjoicGF2bHlkb3NzMTQzIiwiYSI6ImNtNjg5YzRyczAxNGYyaXMzZnI0bGs4YXUifQ.2sW84f1DmD4njKAti-Y1rg';
 
+        // Pharmacy data
         const branches = [
    { name: "Doss Zaitoun", address: "Tomanaby, Cairo", coordinates: [31.314732, 30.103183] },
             { name: "Doss Tayaran", address: "101 El Tayaran St, El-Tawfik, Nasr City, Cairo Governorate 4451015", coordinates: [31.324216, 30.071265] },
@@ -181,7 +261,7 @@
   { name: "صيدلية صموئيل وصفي", address: "Arabia Cornish road - Adjacent to Hilton Plaza hotel, Hurghada, Red Sea Governorate 84300", coordinates: [33.8288267701919, 27.256164544374663] }
 ];
 
-
+        // Initialize map
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
@@ -189,6 +269,14 @@
             zoom: 10
         });
 
+        // DOM elements
+        const branchList = document.getElementById('branch-list');
+        const searchInput = document.getElementById('search');
+        const nearestBranchDiv = document.getElementById('nearest-branch');
+        const loadingDiv = document.getElementById('loading');
+        const errorDiv = document.getElementById('error');
+
+        // Add markers for branches
         const markers = [];
         branches.forEach(branch => {
             const marker = new mapboxgl.Marker()
@@ -202,10 +290,7 @@
             markers.push(marker);
         });
 
-        const branchList = document.getElementById('branch-list');
-        const searchInput = document.getElementById('search');
-        const nearestBranchDiv = document.getElementById('nearest-branch');
-
+        // Update branch list
         function updateBranchList(sortedBranches) {
             branchList.innerHTML = "";
             sortedBranches.forEach((branch, index) => {
@@ -214,64 +299,85 @@
                 branchItem.innerHTML = `
                     <h3>${branch.name}</h3>
                     <p>${branch.address}</p>
-                    <p>Distance: ${branch.distance.toFixed(2)} km</p>
+                    <p>Distance: ${branch.distance ? branch.distance.toFixed(2) + ' km' : 'N/A'}</p>
                     <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
                 `;
                 branchItem.addEventListener('click', () => {
+                    // Close any existing popup
+                    markers.forEach(marker => marker.getPopup().remove());
+                    // Fly to the selected branch
                     map.flyTo({ center: branch.coordinates, zoom: 14 });
-                    const popup = markers[index].getPopup();
-                    if (popup) {
-                        popup.addTo(map);
-                    }
+                    // Open the popup for the selected branch
+                    markers[index].getPopup().addTo(map);
                 });
                 branchList.appendChild(branchItem);
             });
         }
 
-        navigator.geolocation.getCurrentPosition(position => {
-            const userLocation = [position.coords.longitude, position.coords.latitude];
+        // Handle geolocation
+        function handleGeolocation() {
+            navigator.geolocation.getCurrentPosition(
+                position => {
+                    loadingDiv.style.display = 'none';
+                    const userLocation = [position.coords.longitude, position.coords.latitude];
 
-            new mapboxgl.Marker({ color: "blue" })
-                .setLngLat(userLocation)
-                .setPopup(new mapboxgl.Popup().setText("Your Location"))
-                .addTo(map);
+                    // Add user location marker
+                    new mapboxgl.Marker({ color: "blue" })
+                        .setLngLat(userLocation)
+                        .setPopup(new mapboxgl.Popup().setText("Your Location"))
+                        .addTo(map);
 
-            const branchesWithDistances = branches.map(branch => ({
-                ...branch,
-                distance: turf.distance(
-                    turf.point(userLocation),
-                    turf.point(branch.coordinates)
-                )
-            }));
+                    // Calculate distances
+                    const branchesWithDistances = branches.map(branch => ({
+                        ...branch,
+                        distance: turf.distance(turf.point(userLocation), turf.point(branch.coordinates))
+                    }));
 
-            branchesWithDistances.sort((a, b) => a.distance - b.distance);
+                    // Sort by distance
+                    branchesWithDistances.sort((a, b) => a.distance - b.distance);
 
-            const nearestBranch = branchesWithDistances[0];
-            nearestBranchDiv.innerHTML = `The nearest pharmacy: <strong>${nearestBranch.name}</strong>`;
+                    // Display nearest branch
+                    const nearestBranch = branchesWithDistances[0];
+                    nearestBranchDiv.innerHTML = `Nearest Pharmacy: <strong>${nearestBranch.name}</strong>`;
 
-            const popupContent = `
-                <strong>${nearestBranch.name}</strong><br>
-                ${nearestBranch.address}<br>
-                <a href="https://www.google.com/maps?q=${nearestBranch.coordinates[1]},${nearestBranch.coordinates[0]}" target="_blank">View on Google Maps</a>
-            `;
-            map.flyTo({ center: nearestBranch.coordinates, zoom: 14 }).on('moveend', () => {
-                new mapboxgl.Popup()
-                    .setLngLat(nearestBranch.coordinates)
-                    .setHTML(popupContent)
-                    .addTo(map);
-            });
+                    // Fly to nearest branch
+                    map.flyTo({ center: nearestBranch.coordinates, zoom: 14 }).on('moveend', () => {
+                        // Close any existing popup
+                        markers.forEach(marker => marker.getPopup().remove());
+                        // Open the popup for the nearest branch
+                        new mapboxgl.Popup()
+                            .setLngLat(nearestBranch.coordinates)
+                            .setHTML(`
+                                <strong>${nearestBranch.name}</strong><br>
+                                ${nearestBranch.address}<br>
+                                <a href="https://www.google.com/maps?q=${nearestBranch.coordinates[1]},${nearestBranch.coordinates[0]}" target="_blank">View on Google Maps</a>
+                            `)
+                            .addTo(map);
+                    });
 
-            updateBranchList(branchesWithDistances);
-        }, error => {
-            console.error("Location error:", error.message);
-            alert("Unable to fetch location.");
-            updateBranchList(branches.map(branch => ({ ...branch, distance: 0 })));
-        });
+                    // Update branch list
+                    updateBranchList(branchesWithDistances);
+                },
+                error => {
+                    console.error("Location error:", error.message);
+                    loadingDiv.style.display = 'none';
+                    errorDiv.style.display = 'block';
+                    updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
+                }
+            );
+        }
 
+        // Search functionality
         searchInput.addEventListener('input', (e) => {
-            const filteredBranches = branches.filter(branch => branch.name.toLowerCase().includes(e.target.value.toLowerCase()));
-            updateBranchList(filteredBranches.map(branch => ({ ...branch, distance: 0 })));
+            const query = e.target.value.toLowerCase();
+            const filteredBranches = branches.filter(branch =>
+                branch.name.toLowerCase().includes(query) || branch.address.toLowerCase().includes(query)
+            );
+            updateBranchList(filteredBranches.map(branch => ({ ...branch, distance: null })));
         });
+
+        // Initialize
+        handleGeolocation();
     </script>
 </body>
 </html>
