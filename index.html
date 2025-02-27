@@ -12,7 +12,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { 
             font-family: 'Poppins', sans-serif; 
-            height: 100vh; 
+            height: 100vh; F
             background: #E2E0C8; /* Beige background from branding */
             overflow: hidden; 
             transition: background 0.3s ease; 
@@ -646,26 +646,28 @@
 
             // Calculate current translateY from the transform style
             const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
-            const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
+                       const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
 
-            if (currentTranslateY > threshold) {
-                // Collapse (pulled down)
+            if (currentTranslateY < threshold) {
+                // Collapse (dragged up)
                 sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
                 isSidebarCollapsed = true;
                 sidebar.classList.add('collapsed');
                 container.classList.add('collapsed');
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`; // Map takes full height when collapsed
+                    mapInstance.resize();
+                }
             } else {
-                // Expand (pulled up)
+                // Expand (dragged down)
                 sidebar.style.transform = `translateY(0)`;
                 isSidebarCollapsed = false;
                 sidebar.classList.remove('collapsed');
                 container.classList.remove('collapsed');
-            }
-
-            // Ensure map renders correctly after sidebar adjustment
-            if (mapInstance) {
-                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                mapInstance.resize();
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${(window.innerHeight - headerHeight) / 2}px`; // Map takes 50% height when expanded
+                    mapInstance.resize();
+                }
             }
         });
 
@@ -716,9 +718,9 @@
                 fetchUserLocation();
                 mapInstance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
                 
-                // Force resize to ensure map renders correctly
+                // Initial map height adjustment
                 const headerHeight = document.getElementById('header').offsetHeight;
-                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+                mapInstance.getCanvas().style.height = `${(window.innerHeight - headerHeight) / 2}px`; // Start with 50% height
                 mapInstance.resize();
             });
 
@@ -731,28 +733,30 @@
         // Adjust heights on window resize to handle dynamic viewport changes
         window.addEventListener('resize', () => {
             const headerHeight = document.getElementById('header').offsetHeight;
-            const maxHeight = window.innerHeight - headerHeight;
+            const maxHeight = (window.innerHeight - headerHeight) / 2; // Sidebar height is 50% of container
             const minHeight = 60;
 
             if (isSidebarCollapsed) {
                 sidebar.style.height = `${maxHeight}px`;
                 sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`; // Full height when collapsed
+                    mapInstance.resize();
+                }
             } else {
                 sidebar.style.height = `${maxHeight}px`;
                 sidebar.style.transform = `translateY(0)`;
-            }
-
-            // Ensure map height is correct
-            if (mapInstance) {
-                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                mapInstance.resize();
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${maxHeight}px`; // 50% height when expanded
+                    mapInstance.resize();
+                }
             }
         });
 
         // Initial resize to ensure proper rendering
         const headerHeight = document.getElementById('header').offsetHeight;
         if (mapInstance) {
-            mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+            mapInstance.getCanvas().style.height = `${(window.innerHeight - headerHeight) / 2}px`;
             mapInstance.resize();
         }
     </script>
