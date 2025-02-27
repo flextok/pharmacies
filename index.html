@@ -63,7 +63,7 @@
             width: 100%;
             max-width: 450px;
             background: #ffffff;
-            padding: 25px;
+            padding: 10px;
             overflow-y: auto;
             box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15);
             z-index: 5;
@@ -85,21 +85,19 @@
         }
         #search-container {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         #search {
             width: 100%;
-            padding: 15px 50px 15px 20px;
+            padding: 10px 40px 10px 15px;
             border: none;
-            border-radius: 30px;
-            font-size: 16px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
+            border-radius: 20px;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
         }
         #search:focus {
             outline: none;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            transform: scale(1.02);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         }
         #search-icon {
             position: absolute;
@@ -107,73 +105,68 @@
             top: 50%;
             transform: translateY(-50%);
             color: #888;
-            font-size: 18px;
+            font-size: 16px;
             cursor: pointer;
         }
         #chain-filter {
             width: 100%;
-            padding: 15px;
-            margin-bottom: 20px;
+            padding: 10px;
+            margin-bottom: 10px;
             border: none;
-            border-radius: 30px;
-            font-size: 16px;
+            border-radius: 20px;
+            font-size: 14px;
             background: #f9f9f9;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .branch {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #fff;
+            border-radius: 10px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-        #chain-filter:hover { background: #e9ecef; }
-        .branch {
-            padding: 20px;
-            margin-bottom: 15px;
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: all 0.3s ease;
+            transition: transform 0.3s ease;
         }
         .branch:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
         }
         .branch h3 {
-            margin: 0 0 8px;
-            font-size: 20px;
+            margin: 0 0 5px;
+            font-size: 16px;
             color: #5C7285;
             font-weight: 600;
         }
         .branch p {
-            margin: 5px 0;
+            margin: 3px 0;
             color: #7f8c8d;
-            font-size: 14px;
+            font-size: 12px;
         }
         .branch button {
             background: linear-gradient(90deg, #81BC78, #40513B);
             color: white;
             border: none;
-            padding: 8px 15px;
-            border-radius: 20px;
+            padding: 5px 10px;
+            border-radius: 15px;
             cursor: pointer;
             font-weight: 600;
-            transition: transform 0.2s ease;
+            font-size: 12px;
         }
-        .branch button:hover { transform: scale(1.05); }
         .nearest-branch {
             color: #81BC78;
             font-weight: 600;
-            margin-bottom: 20px;
-            font-size: 16px;
+            margin-bottom: 10px;
+            font-size: 14px;
         }
         .loading {
             text-align: center;
-            padding: 30px;
+            padding: 20px;
         }
         .spinner {
-            border: 5px solid #e9ecef;
-            border-top: 5px solid #5C7285;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #5C7285;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
@@ -186,6 +179,7 @@
             padding: 20px;
             color: #e74c3c;
             font-weight: 600;
+            font-size: 14px;
         }
         .dark-mode {
             background: #000000;
@@ -195,16 +189,15 @@
         .dark-mode .branch { background: #2d2d2d; color: #E2E0C8; }
         .dark-mode .branch h3 { color: #E2E0C8; }
         .dark-mode .branch p { color: #d4d2bc; }
-        .dark-mode .branch:hover { background: #3a3a3a; }
         .dark-mode #search {
             background: #1a1a1a;
             color: #E2E0C8;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
         .dark-mode #chain-filter {
             background: #1a1a1a;
             color: #E2E0C8;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
         }
         .dark-mode #search-icon { color: #d4d2bc; }
         #welcome-screen {
@@ -223,14 +216,14 @@
         }
         #welcome-screen h2 {
             color: white;
-            font-size: 48px;
+            font-size: 36px;
             font-weight: 800;
             text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
             text-align: center;
         }
         #welcome-screen p {
             color: #E2E0C8;
-            font-size: 20px;
+            font-size: 18px;
             margin-top: 10px;
             text-align: center;
         }
@@ -556,12 +549,10 @@
                 style: 'mapbox://styles/mapbox/streets-v11',
                 center: [31.314732, 30.103183],
                 zoom: 12,
-                pitch: 45,
-                bearing: -17.6,
             });
         } catch (error) {
-            console.error("Error initializing Mapbox:", error);
-            showError("Failed to initialize the map. Please check your network connection or Mapbox access token.");
+            console.error("Mapbox initialization failed:", error);
+            showError("Failed to initialize the map. Please check your network connection.");
         }
 
         const chains = [...new Set(branches.map(branch => {
@@ -577,7 +568,7 @@
             chainFilter.appendChild(option);
         });
 
-        function addMarkers(filteredBranches = branches) {
+        function addMarkers(filteredBranches) {
             if (!mapInstance) return;
             markers.forEach(marker => marker.remove());
             markers = filteredBranches.map(branch => {
@@ -608,18 +599,7 @@
                         markers[index].togglePopup();
                     }
                     if (window.innerWidth <= 768) {
-                        isSidebarCollapsed = true;
-                        sidebar.classList.add('collapsed');
-                        container.classList.add('collapsed');
-                        const headerHeight = document.getElementById('header').offsetHeight;
-                        const sidebarHeight = (window.innerHeight - headerHeight) / 2;
-                        const collapsedHeight = 60;
-                        sidebar.style.height = `${sidebarHeight}px`;
-                        if (mapInstance) {
-                            mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                            mapInstance.resize();
-                        }
-                        sidebar.style.transform = `translateY(calc(100% - ${collapsedHeight}px))`;
+                        collapseSidebar();
                     }
                 });
                 branchList.appendChild(branchItem);
@@ -653,7 +633,7 @@
         function fetchUserLocation() {
             if (!navigator.geolocation) {
                 showError('Geolocation not supported by your browser.');
-                addMarkers();
+                addMarkers(branches);
                 updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
                 loadingDiv.style.display = 'none';
                 return;
@@ -661,7 +641,7 @@
 
             const geoTimeout = setTimeout(() => {
                 showError('Geolocation request timed out. Loading default map.');
-                addMarkers();
+                addMarkers(branches);
                 updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
                 loadingDiv.style.display = 'none';
             }, 10000);
@@ -691,7 +671,7 @@
                 error => {
                     clearTimeout(geoTimeout);
                     showError('Please enable location services or allow location access.');
-                    addMarkers();
+                    addMarkers(branches);
                     updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
                     loadingDiv.style.display = 'none';
                 }
@@ -700,6 +680,42 @@
 
         function openDirections(coords) {
             window.open(`https://www.google.com/maps?q=${coords}`, '_blank');
+        }
+
+        function updateLayout() {
+            const headerHeight = document.getElementById('header').offsetHeight;
+            const sidebarHeight = (window.innerHeight - headerHeight) / 2;
+            const collapsedHeight = 60;
+
+            if (isSidebarCollapsed) {
+                sidebar.style.height = `${sidebarHeight}px`;
+                sidebar.style.transform = `translateY(calc(100% - ${collapsedHeight}px))`;
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+                    mapInstance.resize();
+                }
+            } else {
+                sidebar.style.height = `${sidebarHeight}px`;
+                sidebar.style.transform = `translateY(0)`;
+                if (mapInstance) {
+                    mapInstance.getCanvas().style.height = `${sidebarHeight}px`;
+                    mapInstance.resize();
+                }
+            }
+        }
+
+        function collapseSidebar() {
+            isSidebarCollapsed = true;
+            sidebar.classList.add('collapsed');
+            container.classList.add('collapsed');
+            updateLayout();
+        }
+
+        function expandSidebar() {
+            isSidebarCollapsed = false;
+            sidebar.classList.remove('collapsed');
+            container.classList.remove('collapsed');
+            updateLayout();
         }
 
         sidebarHeader.addEventListener('touchstart', (e) => {
@@ -731,46 +747,17 @@
 
             const headerHeight = document.getElementById('header').offsetHeight;
             const maxHeight = (window.innerHeight - headerHeight) / 2;
-            const minHeight = 60;
             const threshold = maxHeight / 2;
 
             const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
             const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
 
             if (currentTranslateY < threshold) {
-                sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
-                isSidebarCollapsed = true;
-                sidebar.classList.add('collapsed');
-                container.classList.add('collapsed');
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                    mapInstance.resize();
-                }
+                collapseSidebar();
             } else {
-                sidebar.style.transform = `translateY(0)`;
-                isSidebarCollapsed = false;
-                sidebar.classList.remove('collapsed');
-                container.classList.remove('collapsed');
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${maxHeight}px`;
-                    mapInstance.resize();
-                }
+                expandSidebar();
             }
         });
-
-        if ('webkitSpeechRecognition' in window) {
-            const recognition = new webkitSpeechRecognition();
-            recognition.continuous = false;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-            document.getElementById('search-icon').addEventListener('click', () => {
-                recognition.start();
-            });
-            recognition.onresult = event => {
-                searchInput.value = event.results[0][0].transcript;
-                filterBranches();
-            };
-        }
 
         searchInput.addEventListener('input', filterBranches);
         chainFilter.addEventListener('change', filterBranches);
@@ -790,12 +777,10 @@
 
         if (mapInstance) {
             mapInstance.on('load', () => {
-                addMarkers();
+                addMarkers(branches);
                 fetchUserLocation();
                 mapInstance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-                const headerHeight = document.getElementById('header').offsetHeight;
-                mapInstance.getCanvas().style.height = `${(window.innerHeight - headerHeight) / 2}px`;
-                mapInstance.resize();
+                updateLayout();
             });
 
             mapInstance.on('error', (e) => {
@@ -803,33 +788,9 @@
             });
         }
 
-        window.addEventListener('resize', () => {
-            const headerHeight = document.getElementById('header').offsetHeight;
-            const maxHeight = (window.innerHeight - headerHeight) / 2;
-            const minHeight = 60;
+        window.addEventListener('resize', updateLayout);
 
-            if (isSidebarCollapsed) {
-                sidebar.style.height = `${maxHeight}px`;
-                sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                    mapInstance.resize();
-                }
-            } else {
-                sidebar.style.height = `${maxHeight}px`;
-                sidebar.style.transform = `translateY(0)`;
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${maxHeight}px`;
-                    mapInstance.resize();
-                }
-            }
-        });
-
-        const headerHeight = document.getElementById('header').offsetHeight;
-        if (mapInstance) {
-            mapInstance.getCanvas().style.height = `${(window.innerHeight - headerHeight) / 2}px`;
-            mapInstance.resize();
-        }
+        updateLayout();
     </script>
 </body>
 </html>
