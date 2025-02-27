@@ -632,7 +632,7 @@
             sidebar.style.transform = `translateY(${newTranslateY}px)`;
         });
 
-        sidebarHeader.addEventListener('touchend', () => {
+                sidebarHeader.addEventListener('touchend', () => {
             if (!isDraggingSidebar) return;
             isDraggingSidebar = false;
 
@@ -648,20 +648,24 @@
             const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
             const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
 
-            if (currentTranslateY < threshold) {
-                // Expand to full height
-                sidebar.style.height = `${maxHeight}px`;
-                sidebar.style.transform = `translateY(0)`;
-                isSidebarCollapsed = false;
-                sidebar.classList.remove('collapsed');
-                container.classList.remove('collapsed');
-            } else {
-                // Collapse to minimum height
-                sidebar.style.height = `${maxHeight}px`; // Keep full height for content
+            if (currentTranslateY > threshold) {
+                // Collapse (pulled down)
                 sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
                 isSidebarCollapsed = true;
                 sidebar.classList.add('collapsed');
                 container.classList.add('collapsed');
+            } else {
+                // Expand (pulled up)
+                sidebar.style.transform = `translateY(0)`;
+                isSidebarCollapsed = false;
+                sidebar.classList.remove('collapsed');
+                container.classList.remove('collapsed');
+            }
+
+            // Ensure map renders correctly after sidebar adjustment
+            if (mapInstance) {
+                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+                mapInstance.resize();
             }
         });
 
@@ -678,6 +682,11 @@
                 searchInput.value = event.results[0][0].transcript;
                 filterBranches();
             };
+            recognition.onerror = event => {
+                console.error("Voice recognition error:", event.error);
+            };
+        } else {
+            console.log("Voice recognition not supported in this browser.");
         }
 
         // Event listeners
@@ -686,22 +695,38 @@
         toggleThemeBtn.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             toggleThemeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-            map.setStyle(document.body.classList.contains('dark-mode') ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/streets-v11');
+            if (mapInstance) {
+                mapInstance.setStyle(document.body.classList.contains('dark-mode') ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/streets-v11');
+            }
         });
 
         // Error handling
         function showError(message) {
+            console.error("Error:", message);
             loadingDiv.style.display = 'none';
             errorDiv.style.display = 'block';
             errorDiv.textContent = message;
         }
 
-        // Initialize
-        map.on('load', () => {
-            addMarkers();
-            fetchUserLocation();
-            map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-        });
+        // Initialize map on load
+        if (mapInstance) {
+            mapInstance.on('load', () => {
+                console.log("Map loaded successfully.");
+                addMarkers();
+                fetchUserLocation();
+                mapInstance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+                
+                // Force resize to ensure map renders correctly
+                const headerHeight = document.getElementById('header').offsetHeight;
+                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+                mapInstance.resize();
+            });
+
+            mapInstance.on('error', (e) => {
+                console.error("Mapbox error:", e.error);
+                showError("Failed to load the map. Please check your network connection.");
+            });
+        }
 
         // Adjust heights on window resize to handle dynamic viewport changes
         window.addEventListener('resize', () => {
@@ -712,13 +737,24 @@
             if (isSidebarCollapsed) {
                 sidebar.style.height = `${maxHeight}px`;
                 sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
-                map.style.height = `${window.innerHeight - headerHeight}px`;
             } else {
                 sidebar.style.height = `${maxHeight}px`;
                 sidebar.style.transform = `translateY(0)`;
-                map.style.height = `${window.innerHeight - headerHeight}px`;
+            }
+
+            // Ensure map height is correct
+            if (mapInstance) {
+                mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+                mapInstance.resize();
             }
         });
+
+        // Initial resize to ensure proper rendering
+        const headerHeight = document.getElementById('header').offsetHeight;
+        if (mapInstance) {
+            mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
+            mapInstance.resize();
+        }
     </script>
 </body>
 </html>
