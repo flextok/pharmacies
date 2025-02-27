@@ -57,7 +57,7 @@
         #map { 
             flex: 3; 
             width: 100%; 
-            height: 0; /* Initially hidden on mobile */
+            height: 100%; /* Map takes full height on mobile */
             transition: height 0.3s ease; /* Smooth height transition */
         }
         #sidebar { 
@@ -68,7 +68,7 @@
             overflow-y: auto; 
             box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15); 
             z-index: 5; 
-            transition: height 0.3s ease; /* Smooth height transition */
+            transition: height 0.3s ease, transform 0.3s ease; /* Smooth height and transform transition */
             position: relative;
         }
         #sidebar-header {
@@ -185,21 +185,29 @@
                 height: 100%; /* Ensure container takes full height */
             } 
             #map { 
-                height: 0; /* Initially hidden on mobile */
+                height: 100%; /* Map always takes full height on mobile */
                 width: 100%;
             } 
             #sidebar { 
                 max-width: 100%; 
                 height: 100%; /* Full height on mobile by default */
-                position: relative;
+                position: absolute; /* Position sidebar absolutely */
+                bottom: 0; /* Stick to bottom */
+                left: 0; /* Align to left */
+                right: 0; /* Align to right */
+                transform: translateY(0); /* Default position */
+                z-index: 5; /* Ensure sidebar is above map */
+                background: rgba(255, 255, 255, 0.95); /* Semi-transparent white background */
             }
             #sidebar.collapsed { 
-                height: 60px; /* Collapsed to a smaller height */
+                height: 60px; /* Collapsed height */
+                transform: translateY(calc(100% - 60px)); /* Slide down, showing only 60px */
                 overflow: hidden; /* Hide overflow when collapsed */
                 padding: 10px; /* Reduced padding when collapsed */
+                background: rgba(255, 255, 255, 0.95); /* Semi-transparent background */
             }
             #container.collapsed #map { 
-                height: calc(100% - 60px); /* Map takes full remaining height minus collapsed sidebar */
+                height: 100%; /* Map remains full height */
             }
             #sidebar-header { 
                 display: block; /* Show draggable header on mobile */
@@ -402,7 +410,7 @@
             { name: "El Ezaby Pharmacy – Shoubra Branch 2", address: "43 Shoubra St., Cairo, Egypt", coordinates: [31.2680, 30.0990] },
             { name: "El Ezaby Pharmacy – Nasr City Branch 8", address: "18 Abdel Moneim Riad St., Nasr City, Cairo, Egypt", coordinates: [31.3345, 30.0460] },
             { name: "El Ezaby Pharmacy – El Manyal Branch 2", address: "25 El Manyal St., Cairo, Egypt", coordinates: [31.2200, 30.0235] },
-            { name: "El Ezaby Pharmacy – Zamalek Branch 3", address: "30 El Nadi St., Zamalek, Cairo, Egypt", coordinates: [31.2320, 30.0665] },
+            { name: "El Ezaby Pharmacy – Zamalek Branch 3", address: "30 El Nadi St., Zamalek, Cairo, Egypt", coordinates: [ vendedor: [31.2320, 30.0665] },
             { name: "El Ezaby Pharmacy – Maadi Branch 2", address: "44 El Maadi St., Maadi, Cairo, Egypt", coordinates: [31.2200, 29.9800] },
             { name: "El Ezaby Pharmacy – Heliopolis Branch 4", address: "18 El Nasr St., Heliopolis, Cairo, Egypt", coordinates: [31.2790, 30.1180] },
             { name: "El Ezaby Pharmacy – Cairo Festival City Branch", address: "Cairo Festival Mall, New Cairo, Egypt", coordinates: [31.4090, 30.0315] },
@@ -528,9 +536,10 @@
                         sidebar.classList.add('collapsed');
                         container.classList.add('collapsed');
                         const headerHeight = document.getElementById('header').offsetHeight;
-                        const sidebarHeight = 60; // Collapsed height
-                        sidebar.style.height = `${sidebarHeight}px`;
-                        map.style.height = `${window.innerHeight - headerHeight - sidebarHeight}px`; // Ensure full height
+                        const collapsedHeight = 60; // Collapsed height
+                        sidebar.style.height = `${window.innerHeight - headerHeight}px`;
+                        map.style.height = `${window.innerHeight - headerHeight}px`; // Map takes full height
+                        sidebar.style.transform = `translateY(calc(100% - ${collapsedHeight}px))`;
                     }
                 });
                 branchList.appendChild(branchItem);
@@ -606,23 +615,21 @@
             touchStartY = e.touches[0].clientY;
             startHeight = sidebar.offsetHeight;
             sidebar.style.transition = 'none'; // Disable transition during drag for smooth movement
-            map.style.transition = 'none';
         });
 
         sidebarHeader.addEventListener('touchmove', (e) => {
             if (!isDraggingSidebar) return;
             touchMoveY = e.touches[0].clientY;
             const deltaY = touchStartY - touchMoveY;
-            let newHeight = startHeight + deltaY;
-
-            // Constrain the height between min (60px) and max (window.innerHeight - header)
             const headerHeight = document.getElementById('header').offsetHeight;
             const maxHeight = window.innerHeight - headerHeight; // Full height minus header
             const minHeight = 60; // Minimum height when collapsed
-            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
-
-            sidebar.style.height = `${newHeight}px`;
-            map.style.height = `${window.innerHeight - headerHeight - newHeight}px`; // Adjust map height dynamically
+            
+            // Calculate new transform value
+            let newTranslateY = deltaY;
+            newTranslateY = Math.max(0, Math.min(newTranslateY, maxHeight - minHeight));
+            
+            sidebar.style.transform = `translateY(${newTranslateY}px)`;
         });
 
         sidebarHeader.addEventListener('touchend', () => {
@@ -630,25 +637,28 @@
             isDraggingSidebar = false;
 
             // Re-enable transitions for smooth snapping
-            sidebar.style.transition = 'height 0.3s ease';
-            map.style.transition = 'height 0.3s ease';
+            sidebar.style.transition = 'transform 0.3s ease';
 
             const headerHeight = document.getElementById('header').offsetHeight;
             const maxHeight = window.innerHeight - headerHeight; // Full height minus header
             const minHeight = 60; // Minimum height when collapsed
             const threshold = maxHeight / 2; // Threshold to decide whether to expand or collapse
 
-            if (sidebar.offsetHeight > threshold) {
+            // Calculate current translateY from the transform style
+            const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
+            const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
+
+            if (currentTranslateY < threshold) {
                 // Expand to full height
                 sidebar.style.height = `${maxHeight}px`;
-                map.style.height = '0';
+                sidebar.style.transform = `translateY(0)`;
                 isSidebarCollapsed = false;
                 sidebar.classList.remove('collapsed');
                 container.classList.remove('collapsed');
             } else {
                 // Collapse to minimum height
-                sidebar.style.height = `${minHeight}px`;
-                map.style.height = `${window.innerHeight - headerHeight - minHeight}px`;
+                sidebar.style.height = `${maxHeight}px`; // Keep full height for content
+                sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
                 isSidebarCollapsed = true;
                 sidebar.classList.add('collapsed');
                 container.classList.add('collapsed');
@@ -700,11 +710,13 @@
             const minHeight = 60;
 
             if (isSidebarCollapsed) {
-                sidebar.style.height = `${minHeight}px`;
-                map.style.height = `${window.innerHeight - headerHeight - minHeight}px`;
+                sidebar.style.height = `${maxHeight}px`;
+                sidebar.style.transform = `translateY(calc(100% - ${minHeight}px))`;
+                map.style.height = `${window.innerHeight - headerHeight}px`;
             } else {
                 sidebar.style.height = `${maxHeight}px`;
-                map.style.height = '0';
+                sidebar.style.transform = `translateY(0)`;
+                map.style.height = `${window.innerHeight - headerHeight}px`;
             }
         });
     </script>
