@@ -3,166 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Locator</title>
+    <title>Selwan Pharma (Pharmacy Locator)</title>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        /* General Styles */
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: 'Arial', sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            background-color: #f8f9fa;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            height: 100vh; 
+            background: #E2E0C8; /* Beige background from branding */
+            overflow: hidden; 
+            transition: background 0.3s ease; 
         }
-
-        #header {
-            background-color: #007bff;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        #header { 
+            background: linear-gradient(135deg, #5C7285, #81BC78); /* Dark blue-gray to green gradient */
+            color: #ffffff; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+            z-index: 10; 
+            position: relative; 
         }
-
-        #container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            flex-direction: column;
+        #header h1 { 
+            font-size: 24px; /* Smaller title */
+            font-weight: 800; 
+            letter-spacing: 1px; 
+            animation: fadeIn 1s ease; 
         }
-
-        #map {
-            flex: 1;
-            height: 60vh; /* Map takes 60% of the screen on mobile */
+        #toggle-theme { 
+            background: rgba(255, 255, 255, 0.2); 
+            border: none; 
+            color: #ffffff; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            transition: transform 0.3s ease; 
         }
-
-        #sidebar {
-            width: 100%;
-            background-color: white;
-            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            overflow-y: auto;
-            max-height: 40vh; /* Sidebar takes 40% of the screen on mobile */
+        #toggle-theme:hover { transform: scale(1.1); }
+        #container { display: flex; height: calc(100vh - 70px); overflow: hidden; }
+        #map { flex: 3; height: 100%; transition: filter 0.3s ease; }
+        #sidebar { 
+            width: 100%; 
+            max-width: 450px; 
+            background: #ffffff; 
+            padding: 25px; 
+            overflow-y: auto; 
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15); 
+            z-index: 5; 
+            transition: background 0.3s ease; 
         }
-
-        #sidebar h2 {
-            font-size: 20px;
-            margin: 0 0 20px;
-            color: #007bff;
-            text-align: center;
+        #search-container { position: relative; margin-bottom: 20px; }
+        #search { 
+            width: 100%; 
+            padding: 15px 50px 15px 20px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            transition: all 0.3s ease; 
         }
-
-        #search {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 20px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
+        #search:focus { outline: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); transform: scale(1.02); }
+        #search-icon { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #888; font-size: 18px; cursor: pointer; }
+        #chain-filter { 
+            width: 100%; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            background: #f9f9f9; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
         }
-
-        .branch {
-            padding: 15px;
-            margin-bottom: 10px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease, transform 0.2s ease;
+        #chain-filter:hover { background: #e9ecef; }
+        .branch { 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            background: #fff; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            animation: slideIn 0.5s ease forwards; 
         }
-
-        .branch:hover {
-            background-color: #f1f1f1;
-            transform: translateY(-2px);
+        .branch:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+        .branch h3 { margin: 0 0 8px; font-size: 20px; color: #5C7285; font-weight: 600; } /* Dark blue-gray */
+        .branch p { margin: 5px 0; color: #7f8c8d; font-size: 14px; }
+        .branch button { 
+            background: linear-gradient(90deg, #81BC78, #40513B); /* Green to dark green gradient */
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: transform 0.2s ease; 
         }
-
-        .branch h3 {
-            margin: 0 0 5px;
-            font-size: 18px;
-            color: #333;
+        .branch button:hover { transform: scale(1.05); }
+        .nearest-branch { color: #81BC78; font-weight: 600; margin-bottom: 20px; font-size: 16px; animation: pulse 1.5s infinite; }
+        .loading { text-align: center; padding: 30px; }
+        .spinner { border: 5px solid #e9ecef; border-top: 5px solid #5C7285; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .error { text-align: center; padding: 20px; color: #e74c3c; font-weight: 600; }
+        .dark-mode { background: #000000; color: #E2E0C8; } /* Black background, beige text */
+        .dark-mode #sidebar { background: #1a1a1a; } /* Slightly lighter black */
+        .dark-mode .branch { background: #2d2d2d; color: #E2E0C8; }
+        .dark-mode .branch h3 { color: #E2E0C8; } /* Beige text in dark mode */
+        .dark-mode .branch p { color: #d4d2bc; } /* Lighter beige for secondary text */
+        .dark-mode .branch:hover { background: #3a3a3a; }
+        .dark-mode #search { background: #1a1a1a; color: #E2E0C8; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        .dark-mode #chain-filter { background: #1a1a1a; color: #E2E0C8; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        .dark-mode #search-icon { color: #d4d2bc; }
+        #welcome-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, #5C7285, #81BC78); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            z-index: 100; 
+            animation: fadeOut 2s ease 2s forwards; 
         }
-
-        .branch p {
-            margin: 0;
-            color: #666;
-            font-size: 14px;
+        #welcome-screen h2 { color: white; font-size: 48px; font-weight: 800; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        #welcome-screen p { color: #E2E0C8; font-size: 20px; margin-top: 10px; }
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+        .mapboxgl-popup-content { color: #000000 !important; } /* Black text for popup content */
+        @media (max-width: 768px) { 
+            #container { flex-direction: column; } 
+            #map { height: 50vh; } 
+            #sidebar { max-width: 100%; height: 50vh; } 
+            #header h1 { font-size: 18px; } /* Even smaller on mobile */
         }
-
-        .branch a {
-            color: #007bff;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        .branch a:hover {
-            text-decoration: underline;
-        }
-
-        .nearest-branch {
-            font-size: 16px;
-            font-weight: bold;
-            color: #28a745;
-            margin-bottom: 20px;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: #666;
-        }
-
-        .error {
-            text-align: center;
-            padding: 20px;
-            font-size: 16px;
-            color: #dc3545;
-        }
-
-        /* Desktop Layout */
-        @media (min-width: 768px) {
-            #container {
-                flex-direction: row;
-            }
-
-            #map {
-                height: 100%;
-                flex: 2;
-            }
-
-            #sidebar {
-                width: 350px;
-                max-height: 100vh;
-                box-shadow: 2px 0 4px rgba(0, 0, 0, 0.1);
-            }
+        /* Location marker styles */
+        .mapboxgl-marker { 
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.383 0 0 5.383 0 12c0 6.617 5.383 12 12 12s12-5.383 12-12c0-6.617-5.383-12-12-12zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" fill="%23A9D9A4"/><path d="M12 4c-3.313 0-6 2.687-6 6 0 3.313 2.687 6 6 6s6-2.687 6-6c0-3.313-2.687-6-6-6z" fill="#FFFFFF"/><circle cx="12" cy="10" r="2" fill="%23A9D9A4"/></svg>'); 
+            background-size: cover; 
+            width: 24px; 
+            height: 36px; 
+            cursor: pointer; 
         }
     </style>
 </head>
 <body>
-   <!-- Remove or modify the header -->
-<div id="header" style="display: none;"></div>
-        <!-- Empty header for spacing -->
+    <div id="welcome-screen">
+        <h2>Selwan Pharma</h2>
+        <p>Your Pharmacy Locator</p>
+    </div>
+    <div id="header">
+        <h1>Selwan Pharma (Pharmacy Locator)</h1>
+        <button id="toggle-theme">🌙</button>
     </div>
     <div id="container">
         <div id="map"></div>
         <div id="sidebar">
-            <h2>Pharmacy Locator</h2>
-            <input id="search" type="text" placeholder="Search for pharmacies..." />
+            <div id="search-container">
+                <input id="search" type="text" placeholder="Search pharmacies..." aria-label="Search pharmacies">
+                <span id="search-icon">🔍</span>
+            </div>
+            <select id="chain-filter" aria-label="Filter by pharmacy chain">
+                <option value="all">All Chains</option>
+            </select>
             <div id="nearest-branch" class="nearest-branch"></div>
             <div id="branch-list"></div>
-            <div id="loading" class="loading">Loading...</div>
-            <div id="error" class="error" style="display: none;">Unable to fetch location.</div>
+            <div id="loading" class="loading"><div class="spinner"></div></div>
+            <div id="error" class="error" style="display: none;"></div>
         </div>
     </div>
 
     <script>
-        // Mapbox access token
         mapboxgl.accessToken = 'pk.eyJ1IjoicGF2bHlkb3NzMTQzIiwiYSI6ImNtNjg5YzRyczAxNGYyaXMzZnI0bGs4YXUifQ.2sW84f1DmD4njKAti-Y1rg';
 
-        // Pharmacy data
         const branches = [
    { name: "Doss Zaitoun", address: "Tomanaby, Cairo", coordinates: [31.314732, 30.103183] },
             { name: "Doss Tayaran", address: "101 El Tayaran St, El-Tawfik, Nasr City, Cairo Governorate 4451015", coordinates: [31.324216, 30.071265] },
@@ -365,123 +388,165 @@
 
 ];
 
-        // Initialize map
         const map = new mapboxgl.Map({
             container: 'map',
             style: 'mapbox://styles/mapbox/streets-v11',
-            center: [31.314732, 30.103183],
-            zoom: 10
+            center: [31.314732, 30.103183], // Default to Cairo, adjust as needed
+            zoom: 12,
+            pitch: 45,
+            bearing: -17.6,
         });
 
-        // DOM elements
         const branchList = document.getElementById('branch-list');
         const searchInput = document.getElementById('search');
+        const chainFilter = document.getElementById('chain-filter');
         const nearestBranchDiv = document.getElementById('nearest-branch');
         const loadingDiv = document.getElementById('loading');
         const errorDiv = document.getElementById('error');
+        const toggleThemeBtn = document.getElementById('toggle-theme');
 
-        // Add markers for branches
-        const markers = [];
-        branches.forEach(branch => {
-            const marker = new mapboxgl.Marker()
-                .setLngLat(branch.coordinates)
-                .setPopup(new mapboxgl.Popup().setHTML(`
-                    <strong>${branch.name}</strong><br>
-                    ${branch.address}<br>
-                    <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
-                `))
-                .addTo(map);
-            markers.push(marker);
+        let userLocation = null;
+        let markers = [];
+
+        // Populate chain filter
+        const chains = [...new Set(branches.map(branch => {
+            if (branch.name.includes("Selwan")) return "Selwan Pharma";
+            return branch.name.split(" ")[0];
+        }))].sort();
+        chains.forEach(chain => {
+            const option = document.createElement('option');
+            option.value = chain;
+            option.textContent = chain;
+            chainFilter.appendChild(option);
         });
+
+        // Add markers (lighter green location pin)
+        function addMarkers(filteredBranches = branches) {
+            markers.forEach(marker => marker.remove());
+            markers = filteredBranches.map(branch => {
+                return new mapboxgl.Marker({ className: 'mapboxgl-marker' })
+                    .setLngLat(branch.coordinates)
+                    .setPopup(new mapboxgl.Popup().setHTML(`
+                        <span style="color: #000000;"><strong>${branch.name}</strong><br>${branch.address}<br><a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank" style="color: #000000;">View on Google Maps</a></span>
+                    `))
+                    .addTo(map);
+            });
+        }
 
         // Update branch list
-        function updateBranchList(sortedBranches) {
-    branchList.innerHTML = "";
-    sortedBranches.forEach((branch, index) => {
-        const branchItem = document.createElement('div');
-        branchItem.className = 'branch';
-        branchItem.innerHTML = `
-            <h3>${branch.name}</h3>
-            <p>${branch.address}</p>
-            <p>Distance: ${branch.distance ? branch.distance.toFixed(2) + ' km' : 'N/A'}</p>
-            <a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank">View on Google Maps</a>
-        `;
-        branchItem.addEventListener('click', () => {
-            // Close any existing popup
-            markers.forEach(marker => marker.getPopup().remove());
-            // Fly to the selected branch
-            map.flyTo({ center: branch.coordinates, zoom: 14 });
-            // Open the popup for the selected branch
-            markers[index].togglePopup(); // Toggle the popup for the selected marker
-        });
-        branchList.appendChild(branchItem);
-    });
-}
+        function updateBranchList(branchesToShow) {
+            branchList.innerHTML = '';
+            branchesToShow.forEach((branch, index) => {
+                const branchItem = document.createElement('div');
+                branchItem.className = 'branch';
+                branchItem.innerHTML = `
+                    <h3>${branch.name}</h3>
+                    <p>${branch.address}</p>
+                    <p>Distance: ${branch.distance ? branch.distance.toFixed(2) + ' km' : 'N/A'}</p>
+                    <button onclick="openDirections('${branch.coordinates[1]},${branch.coordinates[0]}')">Directions</button>
+                `;
+                branchItem.addEventListener('click', () => {
+                    map.flyTo({ center: branch.coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
+                    markers[index].togglePopup(); // Open the popup for the corresponding marker
+                });
+                branchList.appendChild(branchItem);
+            });
+        }
 
-        // Handle geolocation
-        function handleGeolocation() {
+        // Filter branches
+        function filterBranches() {
+            const query = searchInput.value.toLowerCase();
+            const selectedChain = chainFilter.value;
+            let filtered = branches;
+
+            if (selectedChain !== 'all') {
+                filtered = branches.filter(branch => {
+                    if (selectedChain === "Selwan Pharma") return branch.name.includes("Selwan");
+                    return branch.name.startsWith(selectedChain);
+                });
+            }
+
+            if (query) {
+                filtered = filtered.filter(branch =>
+                    branch.name.toLowerCase().includes(query) || branch.address.toLowerCase().includes(query)
+                );
+            }
+
+            addMarkers(filtered);
+            updateBranchList(filtered.map(branch => ({ ...branch, distance: null })));
+        }
+
+        // Geolocation
+        function fetchUserLocation() {
+            if (!navigator.geolocation) {
+                showError('Geolocation not supported by your browser.');
+                return;
+            }
             navigator.geolocation.getCurrentPosition(
                 position => {
-                    loadingDiv.style.display = 'none';
-                    const userLocation = [position.coords.longitude, position.coords.latitude];
-
-                    // Add user location marker
-                    new mapboxgl.Marker({ color: "blue" })
+                    userLocation = [position.coords.longitude, position.coords.latitude];
+                    new mapboxgl.Marker({ color: '#81BC78' }) // Original green for user location
                         .setLngLat(userLocation)
-                        .setPopup(new mapboxgl.Popup().setText("Your Location"))
+                        .setPopup(new mapboxgl.Popup().setText('You are here!'))
                         .addTo(map);
 
-                    // Calculate distances
                     const branchesWithDistances = branches.map(branch => ({
                         ...branch,
                         distance: turf.distance(turf.point(userLocation), turf.point(branch.coordinates))
-                    }));
+                    })).sort((a, b) => a.distance - b.distance);
 
-                    // Sort by distance
-                    branchesWithDistances.sort((a, b) => a.distance - b.distance);
-
-                    // Display nearest branch
-                    const nearestBranch = branchesWithDistances[0];
-                    nearestBranchDiv.innerHTML = `Nearest Pharmacy: <strong>${nearestBranch.name}</strong>`;
-
-                    // Fly to nearest branch
-                    map.flyTo({ center: nearestBranch.coordinates, zoom: 14 }).on('moveend', () => {
-                        // Close any existing popup
-                        markers.forEach(marker => marker.getPopup().remove());
-                        // Open the popup for the nearest branch
-                        new mapboxgl.Popup()
-                            .setLngLat(nearestBranch.coordinates)
-                            .setHTML(`
-                                <strong>${nearestBranch.name}</strong><br>
-                                ${nearestBranch.address}<br>
-                                <a href="https://www.google.com/maps?q=${nearestBranch.coordinates[1]},${nearestBranch.coordinates[0]}" target="_blank">View on Google Maps</a>
-                            `)
-                            .addTo(map);
-                    });
-
-                    // Update branch list
+                    nearestBranchDiv.innerHTML = `Nearest: <strong>${branchesWithDistances[0].name}</strong> (${branchesWithDistances[0].distance.toFixed(2)} km)`;
+                    map.flyTo({ center: branchesWithDistances[0].coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
                     updateBranchList(branchesWithDistances);
-                },
-                error => {
-                    console.error("Location error:", error.message);
+                    addMarkers(branchesWithDistances);
                     loadingDiv.style.display = 'none';
-                    errorDiv.style.display = 'block';
-                    updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
-                }
+                },
+                () => showError('Please enable location services.')
             );
         }
 
-        // Search functionality
-        searchInput.addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filteredBranches = branches.filter(branch =>
-                branch.name.toLowerCase().includes(query) || branch.address.toLowerCase().includes(query)
-            );
-            updateBranchList(filteredBranches.map(branch => ({ ...branch, distance: null })));
+        // Open Google Maps directions in a new tab
+        function openDirections(coords) {
+            window.open(`https://www.google.com/maps?q=${coords}`, '_blank');
+        }
+
+        // Voice search
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            document.getElementById('search-icon').addEventListener('click', () => {
+                recognition.start();
+            });
+            recognition.onresult = event => {
+                searchInput.value = event.results[0][0].transcript;
+                filterBranches();
+            };
+        }
+
+        // Event listeners
+        searchInput.addEventListener('input', filterBranches);
+        chainFilter.addEventListener('change', filterBranches);
+        toggleThemeBtn.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            toggleThemeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+            map.setStyle(document.body.classList.contains('dark-mode') ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/streets-v11');
         });
 
+        // Error handling
+        function showError(message) {
+            loadingDiv.style.display = 'none';
+            errorDiv.style.display = 'block';
+            errorDiv.textContent = message;
+        }
+
         // Initialize
-        handleGeolocation();
+        map.on('load', () => {
+            addMarkers();
+            fetchUserLocation();
+            map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        });
     </script>
 </body>
 </html>
