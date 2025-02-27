@@ -51,11 +51,12 @@
             height: calc(100vh - 70px); 
             overflow: hidden; 
             transition: all 0.3s ease; /* Smooth transition for map resizing */
+            position: relative;
         }
         #map { 
             flex: 3; 
             height: 100%; 
-            transition: filter 0.3s ease, height 0.3s ease; /* Smooth height transition */
+            transition: height 0.3s ease; /* Smooth height transition */
         }
         #sidebar { 
             width: 100%; 
@@ -65,7 +66,20 @@
             overflow-y: auto; 
             box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15); 
             z-index: 5; 
-            transition: background 0.3s ease, height 0.3s ease; /* Smooth height transition */
+            transition: height 0.3s ease; /* Smooth height transition */
+        }
+        #sidebar-header {
+            display: none; /* Hidden by default, shown on mobile */
+            background: #81BC78; /* Green from branding */
+            color: white; 
+            padding: 10px; 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: grab; /* Indicate draggable */
+            border-radius: 10px 10px 0 0;
+            margin-bottom: 10px;
+            touch-action: none; /* Prevent default scrolling during drag */
         }
         #search-container { position: relative; margin-bottom: 20px; }
         #search { 
@@ -162,20 +176,6 @@
         }
         @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
         .mapboxgl-popup-content { color: #000000 !important; } /* Black text for popup content */
-        #toggle-sidebar { 
-            display: none; /* Hidden by default on desktop */
-            background: #81BC78; /* Green from branding */
-            color: white; 
-            border: none; 
-            padding: 10px 20px; 
-            border-radius: 20px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: 600; 
-            transition: background 0.3s ease; 
-            margin-bottom: 10px; 
-        }
-        #toggle-sidebar:hover { background: #5C7285; } /* Dark blue-gray on hover */
         @media (max-width: 768px) { 
             #container { 
                 flex-direction: column; 
@@ -187,19 +187,19 @@
             #sidebar { 
                 max-width: 100%; 
                 height: 100%; /* Full height on mobile by default */
-                transition: height 0.3s ease; /* Smooth collapse transition */
+                transition: height 0.3s ease; /* Smooth height transition */
+                position: relative;
             }
             #sidebar.collapsed { 
-                height: 100px; /* Partially collapsed to show a small part of the list */
-                overflow-y: auto; /* Allow scrolling within the small height */
+                height: 60px; /* Collapsed to a smaller height */
+                overflow: hidden; /* Hide overflow when collapsed */
                 padding: 10px; /* Reduced padding when collapsed */
-                transition: height 0.3s ease;
             }
             #container.collapsed #map { 
-                height: calc(100vh - 170px); /* Map takes remaining height minus header and collapsed sidebar */
+                height: calc(100vh - 60px - 70px); /* Map takes full height minus header and collapsed sidebar */
             }
-            #toggle-sidebar { 
-                display: block; /* Show toggle button on mobile */
+            #sidebar-header { 
+                display: block; /* Show draggable header on mobile */
             }
             #header .logo { width: 80px; } /* Larger logo on mobile for visibility */
             #toggle-theme { right: 15px; } /* Adjust toggle position on mobile */
@@ -220,7 +220,7 @@
 <body>
     <div id="welcome-screen">
         <h2>Selwan Pharma</h2>
-        <p>Pharmacy Locator</p>
+        <p>Your Pharmacy Locator</p>
     </div>
     <div id="header">
         <img src="https://flextok.github.io/pharmacies/logo%20selwan%202nd.png" alt="Selwan Pharma Logo" class="logo">
@@ -229,7 +229,7 @@
     <div id="container">
         <div id="map"></div>
         <div id="sidebar">
-            <button id="toggle-sidebar">Back to List</button>
+            <div id="sidebar-header">Drag to Expand/Collapse</div>
             <div id="search-container">
                 <input id="search" type="text" placeholder="Search pharmacies..." aria-label="Search pharmacies">
                 <span id="search-icon">🔍</span>
@@ -466,11 +466,14 @@
         const toggleThemeBtn = document.getElementById('toggle-theme');
         const sidebar = document.getElementById('sidebar');
         const container = document.getElementById('container');
-        const toggleSidebarBtn = document.getElementById('toggle-sidebar');
+        const sidebarHeader = document.getElementById('sidebar-header');
 
         let userLocation = null;
         let markers = [];
         let isSidebarCollapsed = false;
+        let isDragging = false;
+        let startY = 0;
+        let startHeight = 0;
 
         // Populate chain filter
         const chains = [...new Set(branches.map(branch => {
@@ -521,7 +524,8 @@
                         isSidebarCollapsed = true;
                         sidebar.classList.add('collapsed');
                         container.classList.add('collapsed');
-                        toggleSidebarBtn.textContent = 'Back to List';
+                        sidebar.style.height = '60px'; // Set collapsed height
+                        map.style.height = 'calc(100vh - 60px - 70px)'; // Adjust map height
                     }
                 });
                 branchList.appendChild(branchItem);
@@ -587,17 +591,60 @@
             window.open(`https://www.google.com/maps?q=${coords}`, '_blank');
         }
 
-        // Toggle sidebar on mobile
-        toggleSidebarBtn.addEventListener('click', () => {
-            isSidebarCollapsed = !isSidebarCollapsed;
-            if (isSidebarCollapsed) {
-                sidebar.classList.add('collapsed');
-                container.classList.add('collapsed');
-                toggleSidebarBtn.textContent = 'Back to List';
-            } else {
+        // Dragging functionality for mobile
+        let touchStartY = 0;
+        let touchMoveY = 0;
+        let isDraggingSidebar = false;
+
+        sidebarHeader.addEventListener('touchstart', (e) => {
+            isDraggingSidebar = true;
+            touchStartY = e.touches[0].clientY;
+            startHeight = sidebar.offsetHeight;
+            sidebar.style.transition = 'none'; // Disable transition during drag for smooth movement
+            map.style.transition = 'none';
+        });
+
+        sidebarHeader.addEventListener('touchmove', (e) => {
+            if (!isDraggingSidebar) return;
+            touchMoveY = e.touches[0].clientY;
+            const deltaY = touchStartY - touchMoveY;
+            let newHeight = startHeight + deltaY;
+
+            // Constrain the height between min (60px) and max (100%)
+            const maxHeight = window.innerHeight - 70; // Full height minus header
+            const minHeight = 60; // Minimum height when collapsed
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+
+            sidebar.style.height = `${newHeight}px`;
+            map.style.height = `calc(100vh - ${newHeight}px - 70px)`; // Adjust map height dynamically
+        });
+
+        sidebarHeader.addEventListener('touchend', () => {
+            if (!isDraggingSidebar) return;
+            isDraggingSidebar = false;
+
+            // Re-enable transitions for smooth snapping
+            sidebar.style.transition = 'height 0.3s ease';
+            map.style.transition = 'height 0.3s ease';
+
+            const maxHeight = window.innerHeight - 70; // Full height minus header
+            const minHeight = 60; // Minimum height when collapsed
+            const threshold = maxHeight / 2; // Threshold to decide whether to expand or collapse
+
+            if (sidebar.offsetHeight > threshold) {
+                // Expand to full height
+                sidebar.style.height = '100%';
+                map.style.height = '0';
+                isSidebarCollapsed = false;
                 sidebar.classList.remove('collapsed');
                 container.classList.remove('collapsed');
-                toggleSidebarBtn.textContent = 'Back to List';
+            } else {
+                // Collapse to minimum height
+                sidebar.style.height = `${minHeight}px`;
+                map.style.height = `calc(100vh - ${minHeight}px - 70px)`;
+                isSidebarCollapsed = true;
+                sidebar.classList.add('collapsed');
+                container.classList.add('collapsed');
             }
         });
 
