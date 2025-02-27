@@ -27,6 +27,7 @@
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
             z-index: 10; 
             position: relative; 
+            height: 70px; /* Fixed header height */
         }
         #header .logo { 
             width: 100px; /* Larger logo for prominence, adjust as needed */
@@ -48,14 +49,15 @@
         #toggle-theme:hover { transform: scale(1.1); }
         #container { 
             display: flex; 
-            height: calc(100vh - 70px); 
+            height: calc(100% - 70px); /* Use percentage minus header height */
             overflow: hidden; 
-            transition: all 0.3s ease; /* Smooth transition for map resizing */
-            position: relative;
+            position: relative; 
+            width: 100%;
         }
         #map { 
             flex: 3; 
-            height: 100%; 
+            width: 100%; 
+            height: 0; /* Initially hidden on mobile */
             transition: height 0.3s ease; /* Smooth height transition */
         }
         #sidebar { 
@@ -67,6 +69,7 @@
             box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15); 
             z-index: 5; 
             transition: height 0.3s ease; /* Smooth height transition */
+            position: relative;
         }
         #sidebar-header {
             display: none; /* Hidden by default, shown on mobile */
@@ -179,15 +182,15 @@
         @media (max-width: 768px) { 
             #container { 
                 flex-direction: column; 
+                height: 100%; /* Ensure container takes full height */
             } 
             #map { 
                 height: 0; /* Initially hidden on mobile */
-                transition: height 0.3s ease; /* Smooth height transition */
+                width: 100%;
             } 
             #sidebar { 
                 max-width: 100%; 
                 height: 100%; /* Full height on mobile by default */
-                transition: height 0.3s ease; /* Smooth height transition */
                 position: relative;
             }
             #sidebar.collapsed { 
@@ -196,7 +199,7 @@
                 padding: 10px; /* Reduced padding when collapsed */
             }
             #container.collapsed #map { 
-                height: calc(100vh - 60px - 70px); /* Map takes full height minus header and collapsed sidebar */
+                height: calc(100% - 60px); /* Map takes full remaining height minus collapsed sidebar */
             }
             #sidebar-header { 
                 display: block; /* Show draggable header on mobile */
@@ -524,8 +527,10 @@
                         isSidebarCollapsed = true;
                         sidebar.classList.add('collapsed');
                         container.classList.add('collapsed');
-                        sidebar.style.height = '60px'; // Set collapsed height
-                        map.style.height = 'calc(100vh - 60px - 70px)'; // Adjust map height
+                        const headerHeight = document.getElementById('header').offsetHeight;
+                        const sidebarHeight = 60; // Collapsed height
+                        sidebar.style.height = `${sidebarHeight}px`;
+                        map.style.height = `${window.innerHeight - headerHeight - sidebarHeight}px`; // Ensure full height
                     }
                 });
                 branchList.appendChild(branchItem);
@@ -610,13 +615,14 @@
             const deltaY = touchStartY - touchMoveY;
             let newHeight = startHeight + deltaY;
 
-            // Constrain the height between min (60px) and max (100%)
-            const maxHeight = window.innerHeight - 70; // Full height minus header
+            // Constrain the height between min (60px) and max (window.innerHeight - header)
+            const headerHeight = document.getElementById('header').offsetHeight;
+            const maxHeight = window.innerHeight - headerHeight; // Full height minus header
             const minHeight = 60; // Minimum height when collapsed
             newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
 
             sidebar.style.height = `${newHeight}px`;
-            map.style.height = `calc(100vh - ${newHeight}px - 70px)`; // Adjust map height dynamically
+            map.style.height = `${window.innerHeight - headerHeight - newHeight}px`; // Adjust map height dynamically
         });
 
         sidebarHeader.addEventListener('touchend', () => {
@@ -627,13 +633,14 @@
             sidebar.style.transition = 'height 0.3s ease';
             map.style.transition = 'height 0.3s ease';
 
-            const maxHeight = window.innerHeight - 70; // Full height minus header
+            const headerHeight = document.getElementById('header').offsetHeight;
+            const maxHeight = window.innerHeight - headerHeight; // Full height minus header
             const minHeight = 60; // Minimum height when collapsed
             const threshold = maxHeight / 2; // Threshold to decide whether to expand or collapse
 
             if (sidebar.offsetHeight > threshold) {
                 // Expand to full height
-                sidebar.style.height = '100%';
+                sidebar.style.height = `${maxHeight}px`;
                 map.style.height = '0';
                 isSidebarCollapsed = false;
                 sidebar.classList.remove('collapsed');
@@ -641,7 +648,7 @@
             } else {
                 // Collapse to minimum height
                 sidebar.style.height = `${minHeight}px`;
-                map.style.height = `calc(100vh - ${minHeight}px - 70px)`;
+                map.style.height = `${window.innerHeight - headerHeight - minHeight}px`;
                 isSidebarCollapsed = true;
                 sidebar.classList.add('collapsed');
                 container.classList.add('collapsed');
@@ -684,6 +691,21 @@
             addMarkers();
             fetchUserLocation();
             map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        });
+
+        // Adjust heights on window resize to handle dynamic viewport changes
+        window.addEventListener('resize', () => {
+            const headerHeight = document.getElementById('header').offsetHeight;
+            const maxHeight = window.innerHeight - headerHeight;
+            const minHeight = 60;
+
+            if (isSidebarCollapsed) {
+                sidebar.style.height = `${minHeight}px`;
+                map.style.height = `${window.innerHeight - headerHeight - minHeight}px`;
+            } else {
+                sidebar.style.height = `${maxHeight}px`;
+                map.style.height = '0';
+            }
         });
     </script>
 </body>
