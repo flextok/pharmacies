@@ -56,7 +56,9 @@
         }
         #map {
             width: 100%;
+            height: 0; /* Initially hidden */
             z-index: 1;
+            display: none; /* Hide map initially */
         }
         #sidebar {
             width: 100%;
@@ -253,6 +255,7 @@
                 overflow: hidden;
                 padding: 0;
                 background: rgba(255, 255, 255, 0.95);
+                height: 60px; /* Only the header height when collapsed */
             }
             #sidebar.collapsed #sidebar-header {
                 padding: 10px;
@@ -270,6 +273,8 @@
             }
             #map {
                 flex: 3;
+                display: block; /* Always visible on desktop */
+                height: 100%;
             }
             #sidebar {
                 height: 100%;
@@ -277,6 +282,9 @@
                 max-width: 450px;
                 position: relative;
                 transform: none;
+            }
+            #sidebar.collapsed {
+                height: 100%;
             }
         }
         .mapboxgl-marker {
@@ -318,7 +326,7 @@
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoicGF2bHlkb3NzMTQzIiwiYSI6ImNtN294d2h6NzBheWQya3NlanBxemlnbW8ifQ.OlRRfR9wixJRXq5qcWTktA';
 
-       const branches = [
+        const branches = [
    { name: "Doss Zaitoun", address: "Tomanaby, Cairo", coordinates: [31.314732, 30.103183] },
             { name: "Doss Tayaran", address: "101 El Tayaran St, El-Tawfik, Nasr City, Cairo Governorate 4451015", coordinates: [31.324216, 30.071265] },
             { name: "Doss Almaza", address: "40 Almaza Street, Almazah, Heliopolis, Cairo Governorate 4461135", coordinates: [31.346090, 30.085298] },
@@ -595,7 +603,7 @@
                     <button onclick="openDirections('${branch.coordinates[1]},${branch.coordinates[0]}')">Directions</button>
                 `;
                 branchItem.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent touch events from propagating to the map
+                    e.stopPropagation();
                     if (mapInstance) {
                         mapInstance.flyTo({ center: branch.coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
                         markers.forEach(m => m.getPopup().remove());
@@ -688,37 +696,37 @@
         function updateLayout() {
             const headerHeight = document.getElementById('header').offsetHeight;
             const availableHeight = window.innerHeight - headerHeight;
-            const sidebarHeight = availableHeight / 2;
             const collapsedHeight = 60;
 
             if (window.innerWidth <= 768) {
-                sidebar.style.height = `${sidebarHeight}px`;
                 if (isSidebarCollapsed) {
                     sidebar.classList.add('collapsed');
-                    container.classList.remove('collapsed');
-                    sidebar.style.transform = `translateY(${sidebarHeight - collapsedHeight}px)`;
+                    sidebar.style.transform = `translateY(0)`; // Keep at top for collapsed state
+                    sidebar.style.height = `${collapsedHeight}px`; // Only header visible
                     if (mapInstance) {
                         mapInstance.getCanvas().style.height = `${availableHeight - collapsedHeight}px`;
-                        mapInstance.resize();
-                        console.log("Map resized (collapsed):", mapInstance.getCanvas().style.height);
+                        mapInstance.getCanvas().style.display = 'block';
+                        setTimeout(() => mapInstance.resize(), 100); // Delay resize to ensure DOM update
+                        console.log("Map shown (collapsed):", mapInstance.getCanvas().style.height);
                     }
                 } else {
                     sidebar.classList.remove('collapsed');
-                    container.classList.remove('collapsed');
                     sidebar.style.transform = `translateY(0)`;
+                    sidebar.style.height = `${availableHeight}px`; // Full screen list
                     if (mapInstance) {
-                        mapInstance.getCanvas().style.height = `${sidebarHeight}px`;
-                        mapInstance.resize();
-                        console.log("Map resized (expanded):", mapInstance.getCanvas().style.height);
+                        mapInstance.getCanvas().style.height = `0`;
+                        mapInstance.getCanvas().style.display = 'none';
+                        console.log("Map hidden (expanded)");
                     }
                 }
             } else {
-                // Desktop layout: Sidebar takes full height, map takes remaining space
+                // Desktop layout: Sidebar and map side by side
                 sidebar.style.height = `${availableHeight}px`;
                 sidebar.style.transform = `translateY(0)`;
                 if (mapInstance) {
                     mapInstance.getCanvas().style.height = `${availableHeight}px`;
-                    mapInstance.resize();
+                    mapInstance.getCanvas().style.display = 'block';
+                    setTimeout(() => mapInstance.resize(), 100);
                     console.log("Map resized (desktop):", mapInstance.getCanvas().style.height);
                 }
             }
@@ -735,7 +743,7 @@
         }
 
         sidebarHeader.addEventListener('touchstart', (e) => {
-            e.stopPropagation(); // Prevent touch events from interfering with the map
+            e.stopPropagation();
             isDragging = true;
             touchStartY = e.touches[0].clientY;
             const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
@@ -744,29 +752,29 @@
         });
 
         sidebarHeader.addEventListener('touchmove', (e) => {
-            e.stopPropagation(); // Prevent touch events from interfering with the map
+            e.stopPropagation();
             if (!isDragging) return;
             const touchMoveY = e.touches[0].clientY;
             const deltaY = touchMoveY - touchStartY;
             const headerHeight = document.getElementById('header').offsetHeight;
-            const sidebarHeight = (window.innerHeight - headerHeight) / 2;
+            const availableHeight = window.innerHeight - headerHeight;
             const minHeight = 60;
 
             let newTranslateY = initialTranslateY + deltaY;
-            newTranslateY = Math.max(0, Math.min(newTranslateY, sidebarHeight - minHeight));
+            newTranslateY = Math.max(0, Math.min(newTranslateY, availableHeight - minHeight));
             sidebar.style.transform = `translateY(${newTranslateY}px)`;
         });
 
         sidebarHeader.addEventListener('touchend', (e) => {
-            e.stopPropagation(); // Prevent touch events from interfering with the map
+            e.stopPropagation();
             if (!isDragging) return;
             isDragging = false;
 
             sidebar.style.transition = 'transform 0.3s ease';
 
             const headerHeight = document.getElementById('header').offsetHeight;
-            const sidebarHeight = (window.innerHeight - headerHeight) / 2;
-            const threshold = sidebarHeight / 2;
+            const availableHeight = window.innerHeight - headerHeight;
+            const threshold = availableHeight / 2;
 
             const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
             const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
