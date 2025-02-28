@@ -3,292 +3,217 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pharmacy Locator</title>
+    <title>Selwan Pharma (Pharmacy Locator)</title>
     <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html, body {
-            height: 100%;
-            width: 100%;
-            overflow: hidden;
+        body { 
+            font-family: 'Poppins', sans-serif; 
+            height: 100vh; 
+            background: #E2E0C8; /* Beige background from branding */
+            overflow: hidden; 
+            transition: background 0.3s ease; 
         }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #E2E0C8;
+        #header { 
+            background: linear-gradient(135deg, #5C7285, #81BC78); /* Dark blue-gray to green gradient */
+            color: #ffffff; 
+            padding: 20px; 
+            display: flex; 
+            justify-content: center; /* Center-align the logo */
+            align-items: center; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); 
+            z-index: 10; 
+            position: relative; 
         }
-        #header {
-            background: linear-gradient(135deg, #5C7285, #81BC78);
-            color: white;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            z-index: 10;
-            position: relative;
-            height: 70px;
+        #header .logo { 
+            width: 100px; /* Larger logo for prominence, adjust as needed */
+            height: auto; 
+            margin: 0; /* Remove margin since it’s centered */
         }
-        #header .logo {
-            width: 100px;
-            height: auto;
-        }
-        #toggle-theme {
-            background: rgba(255, 255, 255, 0.2);
-            border: none;
-            color: white;
-            padding: 8px 15px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 16px;
-            position: absolute;
-            right: 20px;
-            transition: transform 0.3s ease;
+        #toggle-theme { 
+            background: rgba(255, 255, 255, 0.2); 
+            border: none; 
+            color: #ffffff; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            position: absolute; /* Position toggle to the right */
+            right: 20px; /* Distance from the right edge */
+            transition: transform 0.3s ease; 
         }
         #toggle-theme:hover { transform: scale(1.1); }
-        #container {
-            display: flex;
-            height: calc(100% - 70px);
-            width: 100%;
+        #container { 
+            display: flex; 
+            height: calc(100vh - 70px); 
+            overflow: hidden; 
+            transition: all 0.3s ease; /* Smooth transition for map resizing */
             position: relative;
         }
-        #map {
-            width: 100%;
-            height: 100%;
-            transition: height 0.3s ease;
+        #map { 
+            flex: 3; 
+            height: 100%; 
+            transition: height 0.3s ease; /* Smooth height transition */
         }
-        #sidebar {
-            width: 100%;
-            max-width: 450px;
-            background: #ffffff;
-            padding: 10px;
-            overflow-y: auto;
-            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15);
-            z-index: 5;
-            transition: transform 0.3s ease;
-            position: relative;
+        #sidebar { 
+            width: 100%; 
+            max-width: 450px; 
+            background: #ffffff; 
+            padding: 25px; 
+            overflow-y: auto; 
+            box-shadow: -5px 0 20px rgba(0, 0, 0, 0.15); 
+            z-index: 5; 
+            transition: height 0.3s ease; /* Smooth height transition */
         }
         #sidebar-header {
-            display: none;
-            background: #81BC78;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: grab;
+            display: none; /* Hidden by default, shown on mobile */
+            background: #81BC78; /* Green from branding */
+            color: white; 
+            padding: 10px; 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: 600; 
+            cursor: grab; /* Indicate draggable */
             border-radius: 10px 10px 0 0;
             margin-bottom: 10px;
-            touch-action: none;
+            touch-action: none; /* Prevent default scrolling during drag */
         }
-        #search-container {
-            position: relative;
-            margin-bottom: 10px;
+        #search-container { position: relative; margin-bottom: 20px; }
+        #search { 
+            width: 100%; 
+            padding: 15px 50px 15px 20px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            transition: all 0.3s ease; 
         }
-        #search {
-            width: 100%;
-            padding: 10px 40px 10px 15px;
-            border: none;
-            border-radius: 20px;
-            font-size: 14px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        #search:focus { outline: none; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); transform: scale(1.02); }
+        #search-icon { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #888; font-size: 18px; cursor: pointer; }
+        #chain-filter { 
+            width: 100%; 
+            padding: 15px; 
+            margin-bottom: 20px; 
+            border: none; 
+            border-radius: 30px; 
+            font-size: 16px; 
+            background: #f9f9f9; 
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
         }
-        #search:focus {
-            outline: none;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        #chain-filter:hover { background: #e9ecef; }
+        .branch { 
+            padding: 20px; 
+            margin-bottom: 15px; 
+            background: #fff; 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            animation: slideIn 0.5s ease forwards; 
         }
-        #search-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #888;
-            font-size: 16px;
-            cursor: pointer;
+        .branch:hover { transform: translateY(-5px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15); }
+        .branch h3 { margin: 0 0 8px; font-size: 20px; color: #5C7285; font-weight: 600; } /* Dark blue-gray */
+        .branch p { margin: 5px 0; color: #7f8c8d; font-size: 14px; }
+        .branch button { 
+            background: linear-gradient(90deg, #81BC78, #40513B); /* Green to dark green gradient */
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            transition: transform 0.2s ease; 
         }
-        #chain-filter {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: none;
-            border-radius: 20px;
-            font-size: 14px;
-            background: #f9f9f9;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        }
-        .branch {
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-            cursor: pointer;
-            transition: transform 0.3s ease;
-        }
-        .branch:hover {
-            transform: translateY(-3px);
-        }
-        .branch h3 {
-            margin: 0 0 5px;
-            font-size: 16px;
-            color: #5C7285;
-            font-weight: 600;
-        }
-        .branch p {
-            margin: 3px 0;
-            color: #7f8c8d;
-            font-size: 12px;
-        }
-        .branch button {
-            background: linear-gradient(90deg, #81BC78, #40513B);
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-        }
-        .nearest-branch {
-            color: #81BC78;
-            font-weight: 600;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-        .loading {
-            text-align: center;
-            padding: 20px;
-        }
-        .spinner {
-            border: 4px solid #e9ecef;
-            border-top: 4px solid #5C7285;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        .error {
-            text-align: center;
-            padding: 20px;
-            color: #e74c3c;
-            font-weight: 600;
-            font-size: 14px;
-        }
-        .dark-mode {
-            background: #000000;
-            color: #E2E0C8;
-        }
-        .dark-mode #sidebar { background: #1a1a1a; }
+        .branch button:hover { transform: scale(1.05); }
+        .nearest-branch { color: #81BC78; font-weight: 600; margin-bottom: 20px; font-size: 16px; animation: pulse 1.5s infinite; }
+        .loading { text-align: center; padding: 30px; }
+        .spinner { border: 5px solid #e9ecef; border-top: 5px solid #5C7285; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .error { text-align: center; padding: 20px; color: #e74c3c; font-weight: 600; }
+        .dark-mode { background: #000000; color: #E2E0C8; } /* Black background, beige text */
+        .dark-mode #sidebar { background: #1a1a1a; } /* Slightly lighter black */
         .dark-mode .branch { background: #2d2d2d; color: #E2E0C8; }
-        .dark-mode .branch h3 { color: #E2E0C8; }
-        .dark-mode .branch p { color: #d4d2bc; }
-        .dark-mode #search {
-            background: #1a1a1a;
-            color: #E2E0C8;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
-        .dark-mode #chain-filter {
-            background: #1a1a1a;
-            color: #E2E0C8;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-        }
+        .dark-mode .branch h3 { color: #E2E0C8; } /* Beige text in dark mode */
+        .dark-mode .branch p { color: #d4d2bc; } /* Lighter beige for secondary text */
+        .dark-mode .branch:hover { background: #3a3a3a; }
+        .dark-mode #search { background: #1a1a1a; color: #E2E0C8; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
+        .dark-mode #chain-filter { background: #1a1a1a; color: #E2E0C8; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); }
         .dark-mode #search-icon { color: #d4d2bc; }
-        #welcome-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #5C7285, #81BC78);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            z-index: 100;
-            animation: fadeOut 2s ease 2s forwards;
+        #welcome-screen { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background: linear-gradient(135deg, #5C7285, #81BC78); 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            flex-direction: column; 
+            z-index: 100; 
+            animation: fadeOut 2s ease 2s forwards; 
         }
-        #welcome-screen h2 {
-            color: white;
-            font-size: 36px;
-            font-weight: 800;
-            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-            text-align: center;
+        #welcome-screen h2 { 
+            color: white; 
+            font-size: 48px; 
+            font-weight: 800; 
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); 
+            text-align: center; /* Ensure text is centered */
         }
-        #welcome-screen p {
-            color: #E2E0C8;
-            font-size: 18px;
-            margin-top: 10px;
-            text-align: center;
+        #welcome-screen p { 
+            color: #E2E0C8; 
+            font-size: 20px; 
+            margin-top: 10px; 
+            text-align: center; /* Ensure text is centered */
         }
-        @keyframes fadeOut {
-            to { opacity: 0; visibility: hidden; }
-        }
-        .mapboxgl-popup-content { color: #000000 !important; }
-        @media (max-width: 768px) {
-            #container {
-                flex-direction: column;
-                height: 100%;
-            }
-            #map {
-                height: 50%;
-                width: 100%;
-            }
-            #sidebar {
-                max-width: 100%;
-                height: 50%;
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                transform: translateY(0);
-                z-index: 5;
-                background: rgba(255, 255, 255, 0.95);
-            }
-            #sidebar.collapsed {
-                height: 60px;
-                transform: translateY(calc(100% - 60px));
-                overflow: hidden;
-                padding: 10px;
-                background: rgba(255, 255, 255, 0.95);
-            }
-            #container.collapsed #map {
-                height: 100%;
-            }
-            #sidebar-header {
-                display: block;
-            }
-            #header .logo { width: 80px; }
-            #toggle-theme { right: 15px; }
-        }
-        @media (min-width: 769px) {
-            #container {
-                flex-direction: row;
-            }
-            #map {
-                height: 100%;
-                flex: 3;
-            }
-            #sidebar {
-                height: 100%;
-                width: 450px;
-                max-width: 450px;
+        @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+        .mapboxgl-popup-content { color: #000000 !important; } /* Black text for popup content */
+        @media (max-width: 768px) { 
+            #container { 
+                flex-direction: column; 
+            } 
+            #map { 
+                height: 0; /* Initially hidden on mobile */
+                transition: height 0.3s ease; /* Smooth height transition */
+            } 
+            #sidebar { 
+                max-width: 100%; 
+                height: 100%; /* Full height on mobile by default */
+                transition: height 0.3s ease; /* Smooth height transition */
                 position: relative;
-                transform: none;
+            }
+            #sidebar.collapsed { 
+                height: 60px; /* Collapsed to a smaller height */
+                overflow: hidden; /* Hide overflow when collapsed */
+                padding: 10px; /* Reduced padding when collapsed */
+            }
+            #container.collapsed #map { 
+                height: calc(100vh - 60px - 70px); /* Map takes full height minus header and collapsed sidebar */
+            }
+            #sidebar-header { 
+                display: block; /* Show draggable header on mobile */
+            }
+            #header .logo { width: 80px; } /* Larger logo on mobile for visibility */
+            #toggle-theme { right: 15px; } /* Adjust toggle position on mobile */
+            #welcome-screen h2, #welcome-screen p { 
+                text-align: center; /* Ensure centered text on mobile */
             }
         }
-        .mapboxgl-marker {
-            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.383 0 0 5.383 0 12c0 6.617 5.383 12 12 12s12-5.383 12-12c0-6.617-5.383-12-12-12zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" fill="%23A9D9A4"/><path d="M12 4c-3.313 0-6 2.687-6 6 0 3.313 2.687 6 6 6s6-2.687 6-6c0-3.313-2.687-6-6-6z" fill="#FFFFFF"/><circle cx="12" cy="10" r="2" fill="%23A9D9A4"/></svg>');
-            background-size: cover;
-            width: 24px;
-            height: 36px;
-            cursor: pointer;
+        /* Location marker styles */
+        .mapboxgl-marker { 
+            background-image: url('data:image/svg+xml;charset=utf-8,<svg width="24" height="36" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 0C5.383 0 0 5.383 0 12c0 6.617 5.383 12 12 12s12-5.383 12-12c0-6.617-5.383-12-12-12zm0 18c-4.418 0-8-3.582-8-8s3.582-8 8-8 8 3.582 8 8-3.582 8-8 8z" fill="%23A9D9A4"/><path d="M12 4c-3.313 0-6 2.687-6 6 0 3.313 2.687 6 6 6s6-2.687 6-6c0-3.313-2.687-6-6-6z" fill="#FFFFFF"/><circle cx="12" cy="10" r="2" fill="%23A9D9A4"/></svg>'); 
+            background-size: cover; 
+            width: 24px; 
+            height: 36px; 
+            cursor: pointer; 
         }
     </style>
 </head>
@@ -523,6 +448,15 @@
             { name: "El Ezaby Pharmacy – Zamalek Branch 8", address: "30 El Zamalek St., Zamalek, Cairo, Egypt", coordinates: [31.2265, 30.0750] }
         ];
 
+        const map = new mapboxgl.Map({
+            container: 'map',
+            style: 'mapbox://styles/mapbox/streets-v11',
+            center: [31.314732, 30.103183], // Default to Cairo, adjust as needed
+            zoom: 12,
+            pitch: 45,
+            bearing: -17.6,
+        });
+
         const branchList = document.getElementById('branch-list');
         const searchInput = document.getElementById('search');
         const chainFilter = document.getElementById('chain-filter');
@@ -538,23 +472,10 @@
         let markers = [];
         let isSidebarCollapsed = false;
         let isDragging = false;
-        let touchStartY = 0;
-        let touchMoveY = 0;
-        let initialTranslateY = 0;
-        let mapInstance = null;
+        let startY = 0;
+        let startHeight = 0;
 
-        try {
-            mapInstance = new mapboxgl.Map({
-                container: 'map',
-                style: 'mapbox://styles/mapbox/streets-v11',
-                center: [31.314732, 30.103183],
-                zoom: 12,
-            });
-        } catch (error) {
-            console.error("Mapbox initialization failed:", error);
-            showError("Failed to initialize the map. Please check your network connection.");
-        }
-
+        // Populate chain filter
         const chains = [...new Set(branches.map(branch => {
             if (branch.name.includes("El Ezaby")) return "El Ezaby Pharmacy";
             if (branch.name.includes("Doss")) return "Doss Pharmacy";
@@ -568,8 +489,8 @@
             chainFilter.appendChild(option);
         });
 
-        function addMarkers(filteredBranches) {
-            if (!mapInstance) return;
+        // Add markers (lighter green location pin)
+        function addMarkers(filteredBranches = branches) {
             markers.forEach(marker => marker.remove());
             markers = filteredBranches.map(branch => {
                 return new mapboxgl.Marker({ className: 'mapboxgl-marker' })
@@ -577,10 +498,11 @@
                     .setPopup(new mapboxgl.Popup().setHTML(`
                         <span style="color: #000000;"><strong>${branch.name}</strong><br>${branch.address}<br><a href="https://www.google.com/maps?q=${branch.coordinates[1]},${branch.coordinates[0]}" target="_blank" style="color: #000000;">View on Google Maps</a></span>
                     `))
-                    .addTo(mapInstance);
+                    .addTo(map);
             });
         }
 
+        // Update branch list
         function updateBranchList(branchesToShow) {
             branchList.innerHTML = '';
             branchesToShow.forEach((branch, index) => {
@@ -593,19 +515,24 @@
                     <button onclick="openDirections('${branch.coordinates[1]},${branch.coordinates[0]}')">Directions</button>
                 `;
                 branchItem.addEventListener('click', () => {
-                    if (mapInstance) {
-                        mapInstance.flyTo({ center: branch.coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
-                        markers.forEach(m => m.getPopup().remove());
-                        markers[index].togglePopup();
-                    }
-                    if (window.innerWidth <= 768) {
-                        collapseSidebar();
+                    map.flyTo({ center: branch.coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
+                    // Close any existing popup before opening a new one
+                    markers.forEach(m => m.getPopup().remove());
+                    markers[index].togglePopup(); // Open the popup for the corresponding marker
+                    // Collapse the sidebar on mobile
+                    if (window.innerWidth <= 768) { // Check if on mobile
+                        isSidebarCollapsed = true;
+                        sidebar.classList.add('collapsed');
+                        container.classList.add('collapsed');
+                        sidebar.style.height = '60px'; // Set collapsed height
+                        map.style.height = 'calc(100vh - 60px - 70px)'; // Adjust map height
                     }
                 });
                 branchList.appendChild(branchItem);
             });
         }
 
+        // Filter branches
         function filterBranches() {
             const query = searchInput.value.toLowerCase();
             const selectedChain = chainFilter.value;
@@ -630,167 +557,134 @@
             updateBranchList(filtered.map(branch => ({ ...branch, distance: null })));
         }
 
+        // Geolocation
         function fetchUserLocation() {
             if (!navigator.geolocation) {
                 showError('Geolocation not supported by your browser.');
-                addMarkers(branches);
-                updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
-                loadingDiv.style.display = 'none';
                 return;
             }
-
-            const geoTimeout = setTimeout(() => {
-                showError('Geolocation request timed out. Loading default map.');
-                addMarkers(branches);
-                updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
-                loadingDiv.style.display = 'none';
-            }, 10000);
-
             navigator.geolocation.getCurrentPosition(
                 position => {
-                    clearTimeout(geoTimeout);
                     userLocation = [position.coords.longitude, position.coords.latitude];
-                    if (mapInstance) {
-                        new mapboxgl.Marker({ color: '#81BC78' })
-                            .setLngLat(userLocation)
-                            .setPopup(new mapboxgl.Popup().setText('You are here!'))
-                            .addTo(mapInstance);
+                    new mapboxgl.Marker({ color: '#81BC78' }) // Original green for user location
+                        .setLngLat(userLocation)
+                        .setPopup(new mapboxgl.Popup().setText('You are here!'))
+                        .addTo(map);
 
-                        const branchesWithDistances = branches.map(branch => ({
-                            ...branch,
-                            distance: turf.distance(turf.point(userLocation), turf.point(branch.coordinates))
-                        })).sort((a, b) => a.distance - b.distance);
+                    const branchesWithDistances = branches.map(branch => ({
+                        ...branch,
+                        distance: turf.distance(turf.point(userLocation), turf.point(branch.coordinates))
+                    })).sort((a, b) => a.distance - b.distance);
 
-                        nearestBranchDiv.innerHTML = `Nearest: <strong>${branchesWithDistances[0].name}</strong> (${branchesWithDistances[0].distance.toFixed(2)} km)`;
-                        mapInstance.flyTo({ center: branchesWithDistances[0].coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
-                        updateBranchList(branchesWithDistances);
-                        addMarkers(branchesWithDistances);
-                    }
+                    nearestBranchDiv.innerHTML = `Nearest: <strong>${branchesWithDistances[0].name}</strong> (${branchesWithDistances[0].distance.toFixed(2)} km)`;
+                    map.flyTo({ center: branchesWithDistances[0].coordinates, zoom: 15, speed: 1.2, curve: 1.4 });
+                    updateBranchList(branchesWithDistances);
+                    addMarkers(branchesWithDistances);
                     loadingDiv.style.display = 'none';
                 },
-                error => {
-                    clearTimeout(geoTimeout);
-                    showError('Please enable location services or allow location access.');
-                    addMarkers(branches);
-                    updateBranchList(branches.map(branch => ({ ...branch, distance: null })));
-                    loadingDiv.style.display = 'none';
-                }
+                () => showError('Please enable location services.')
             );
         }
 
+        // Open Google Maps directions in a new tab
         function openDirections(coords) {
             window.open(`https://www.google.com/maps?q=${coords}`, '_blank');
         }
 
-        function updateLayout() {
-            const headerHeight = document.getElementById('header').offsetHeight;
-            const sidebarHeight = (window.innerHeight - headerHeight) / 2;
-            const collapsedHeight = 60;
-
-            if (isSidebarCollapsed) {
-                sidebar.style.height = `${sidebarHeight}px`;
-                sidebar.style.transform = `translateY(calc(100% - ${collapsedHeight}px))`;
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${window.innerHeight - headerHeight}px`;
-                    mapInstance.resize();
-                }
-            } else {
-                sidebar.style.height = `${sidebarHeight}px`;
-                sidebar.style.transform = `translateY(0)`;
-                if (mapInstance) {
-                    mapInstance.getCanvas().style.height = `${sidebarHeight}px`;
-                    mapInstance.resize();
-                }
-            }
-        }
-
-        function collapseSidebar() {
-            isSidebarCollapsed = true;
-            sidebar.classList.add('collapsed');
-            container.classList.add('collapsed');
-            updateLayout();
-        }
-
-        function expandSidebar() {
-            isSidebarCollapsed = false;
-            sidebar.classList.remove('collapsed');
-            container.classList.remove('collapsed');
-            updateLayout();
-        }
+        // Dragging functionality for mobile
+        let touchStartY = 0;
+        let touchMoveY = 0;
+        let isDraggingSidebar = false;
 
         sidebarHeader.addEventListener('touchstart', (e) => {
-            isDragging = true;
+            isDraggingSidebar = true;
             touchStartY = e.touches[0].clientY;
-            const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
-            initialTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
-            sidebar.style.transition = 'none';
+            startHeight = sidebar.offsetHeight;
+            sidebar.style.transition = 'none'; // Disable transition during drag for smooth movement
+            map.style.transition = 'none';
         });
 
         sidebarHeader.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
+            if (!isDraggingSidebar) return;
             touchMoveY = e.touches[0].clientY;
-            const deltaY = touchMoveY - touchStartY;
-            const headerHeight = document.getElementById('header').offsetHeight;
-            const maxHeight = (window.innerHeight - headerHeight) / 2;
-            const minHeight = 60;
+            const deltaY = touchStartY - touchMoveY;
+            let newHeight = startHeight + deltaY;
 
-            let newTranslateY = initialTranslateY + deltaY;
-            newTranslateY = Math.max(0, Math.min(newTranslateY, maxHeight - minHeight));
-            sidebar.style.transform = `translateY(${newTranslateY}px)`;
+            // Constrain the height between min (60px) and max (100%)
+            const maxHeight = window.innerHeight - 70; // Full height minus header
+            const minHeight = 60; // Minimum height when collapsed
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
+
+            sidebar.style.height = `${newHeight}px`;
+            map.style.height = `calc(100vh - ${newHeight}px - 70px)`; // Adjust map height dynamically
         });
 
         sidebarHeader.addEventListener('touchend', () => {
-            if (!isDragging) return;
-            isDragging = false;
+            if (!isDraggingSidebar) return;
+            isDraggingSidebar = false;
 
-            sidebar.style.transition = 'transform 0.3s ease';
+            // Re-enable transitions for smooth snapping
+            sidebar.style.transition = 'height 0.3s ease';
+            map.style.transition = 'height 0.3s ease';
 
-            const headerHeight = document.getElementById('header').offsetHeight;
-            const maxHeight = (window.innerHeight - headerHeight) / 2;
-            const threshold = maxHeight / 2;
+            const maxHeight = window.innerHeight - 70; // Full height minus header
+            const minHeight = 60; // Minimum height when collapsed
+            const threshold = maxHeight / 2; // Threshold to decide whether to expand or collapse
 
-            const transformValue = sidebar.style.transform.match(/translateY\(([^)]+)\)/);
-            const currentTranslateY = transformValue ? parseFloat(transformValue[1]) : 0;
-
-            if (currentTranslateY < threshold) {
-                collapseSidebar();
+            if (sidebar.offsetHeight > threshold) {
+                // Expand to full height
+                sidebar.style.height = '100%';
+                map.style.height = '0';
+                isSidebarCollapsed = false;
+                sidebar.classList.remove('collapsed');
+                container.classList.remove('collapsed');
             } else {
-                expandSidebar();
+                // Collapse to minimum height
+                sidebar.style.height = `${minHeight}px`;
+                map.style.height = `calc(100vh - ${minHeight}px - 70px)`;
+                isSidebarCollapsed = true;
+                sidebar.classList.add('collapsed');
+                container.classList.add('collapsed');
             }
         });
 
+        // Voice search
+        if ('webkitSpeechRecognition' in window) {
+            const recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.lang = 'en-US';
+            document.getElementById('search-icon').addEventListener('click', () => {
+                recognition.start();
+            });
+            recognition.onresult = event => {
+                searchInput.value = event.results[0][0].transcript;
+                filterBranches();
+            };
+        }
+
+        // Event listeners
         searchInput.addEventListener('input', filterBranches);
         chainFilter.addEventListener('change', filterBranches);
         toggleThemeBtn.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             toggleThemeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
-            if (mapInstance) {
-                mapInstance.setStyle(document.body.classList.contains('dark-mode') ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/streets-v11');
-            }
+            map.setStyle(document.body.classList.contains('dark-mode') ? 'mapbox://styles/mapbox/dark-v10' : 'mapbox://styles/mapbox/streets-v11');
         });
 
+        // Error handling
         function showError(message) {
             loadingDiv.style.display = 'none';
             errorDiv.style.display = 'block';
             errorDiv.textContent = message;
         }
 
-        if (mapInstance) {
-            mapInstance.on('load', () => {
-                addMarkers(branches);
-                fetchUserLocation();
-                mapInstance.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-                updateLayout();
-            });
-
-            mapInstance.on('error', (e) => {
-                showError("Failed to load the map. Please check your network connection.");
-            });
-        }
-
-        window.addEventListener('resize', updateLayout);
-
-        updateLayout();
+        // Initialize
+        map.on('load', () => {
+            addMarkers();
+            fetchUserLocation();
+            map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+        });
     </script>
 </body>
 </html>
